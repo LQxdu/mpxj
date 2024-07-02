@@ -127,7 +127,7 @@ public class Schedule
          case FINISH_FINISH:
          {
             Duration lag = relation.getLag();
-            if (lag.getDuration() <= 1)
+            if (lag.getDuration() < 1)
             {
                return projectFinishDate;
             }
