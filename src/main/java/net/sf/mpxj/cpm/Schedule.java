@@ -4,11 +4,13 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import net.sf.mpxj.Duration;
 import net.sf.mpxj.ProjectCalendar;
 import net.sf.mpxj.ProjectFile;
 import net.sf.mpxj.Relation;
+import net.sf.mpxj.RelationType;
 import net.sf.mpxj.Task;
 
 public class Schedule
@@ -49,6 +51,7 @@ public class Schedule
       for (Task task : tasks)
       {
          List<Relation> successors = m_file.getRelations().getRawSuccessors(task);
+         ProjectCalendar calendar = task.getEffectiveCalendar();
          LocalDateTime lateFinish;
          if (successors.isEmpty())
          {
@@ -56,14 +59,13 @@ public class Schedule
          }
          else
          {
-            lateFinish = successors.stream().map(r -> r.getSourceTask().getLateStart()).min(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing late start date"));
+            lateFinish = successors.stream().map(r -> calculateLateFinish(calendar, projectFinishDate, r)).min(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing late start date"));
          }
 
-         ProjectCalendar calendar = task.getEffectiveCalendar();
          Duration duration = task.getDuration();
          LocalDateTime lateStart = calendar.getDate(lateFinish, Duration.getInstance(-duration.getDuration(), duration.getUnits()));
 
-         task.setLateFinish(lateFinish);
+         task.setLateFinish(calendar.getPreviousWorkFinish(lateFinish));
          task.setLateStart(lateStart);
       }
    }
@@ -105,6 +107,16 @@ public class Schedule
       }
    }
 
+   private LocalDateTime calculateLateFinish(ProjectCalendar calendar, LocalDateTime projectFinishDate, Relation relation)
+   {
+      if (relation.getType() == RelationType.START_START)
+      {
+         Duration offset = Duration.getInstance(-relation.getLag().getDuration(), relation.getLag().getUnits());
+         return calendar.getDate(projectFinishDate, offset);
+      }
+
+      return relation.getSourceTask().getLateStart();
+   }
 
    private final ProjectFile m_file;
 }
