@@ -92,6 +92,9 @@ public class Schedule
             Duration duration = relation.getSourceTask().getDuration();
             duration = Duration.getInstance(-duration.getDuration(), duration.getUnits());
             LocalDateTime earlyStart = calendar.getDate(task.getEarlyFinish(), duration);
+
+            earlyStart = calendar.getDate(earlyStart, relation.getLag());
+
             if (earlyStart.isBefore(task.getEarlyStart()))
             {
                earlyStart = task.getEarlyStart();
@@ -101,7 +104,7 @@ public class Schedule
 
          case START_FINISH:
          {
-            Duration taskDuration = task.getDuration();
+            Duration taskDuration = relation.getSourceTask().getDuration();
             Duration taskOffset = Duration.getInstance(-taskDuration.getDuration(), taskDuration.getUnits());
             return calendar.getDate(calendar.getDate(task.getEarlyStart(), taskOffset), relation.getLag());
          }

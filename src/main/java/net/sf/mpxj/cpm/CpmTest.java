@@ -2,6 +2,7 @@ package net.sf.mpxj.cpm;
 
 import java.time.LocalDateTime;
 
+import net.sf.mpxj.ProjectCalendar;
 import net.sf.mpxj.ProjectFile;
 import net.sf.mpxj.Task;
 import net.sf.mpxj.TaskField;
@@ -11,7 +12,7 @@ public class CpmTest
 {
    public static void main(String[] argv) throws Exception
    {
-      new CpmTest().process("/Users/joniles/Downloads/cpm-sample-5.mpp");
+      new CpmTest().process("/Users/joniles/Downloads/cpm-sample-sf-4.mpp");
    }
 
    public void process(String file) throws Exception
@@ -43,9 +44,17 @@ public class CpmTest
       System.out.print(baseline + " " + field + " baseline=" + baselineDate + " working=" + workingDate);
       if (!baselineDate.isEqual(workingDate))
       {
-         // throw new RuntimeException(baseline + " " + field + " baseline=" + baselineDate + " working=" + workingDate);
-         //System.out.println(baseline + " " + field + " baseline=" + baselineDate + " working=" + workingDate);
-         System.out.print(" FAIL");
+         ProjectCalendar calendar = baseline.getEffectiveCalendar();
+         if (calendar.getNextWorkStart(workingDate).isEqual(baselineDate))
+         {
+            //System.out.print(" WARN");
+         }
+         else
+         {
+            // throw new RuntimeException(baseline + " " + field + " baseline=" + baselineDate + " working=" + workingDate);
+            //System.out.println(baseline + " " + field + " baseline=" + baselineDate + " working=" + workingDate);
+            System.out.print(" FAIL");
+         }
       }
       System.out.println();
    }
