@@ -89,14 +89,14 @@ public class Schedule
 
          case FINISH_FINISH:
          {
-            Duration lag = relation.getLag();
-            if (lag.getDuration() <= 1)
+            Duration duration = relation.getSourceTask().getDuration();
+            duration = Duration.getInstance(-duration.getDuration(), duration.getUnits());
+            LocalDateTime earlyStart = calendar.getDate(task.getEarlyFinish(), duration);
+            if (earlyStart.isBefore(task.getEarlyStart()))
             {
-               return task.getEarlyStart();
+               earlyStart = task.getEarlyStart();
             }
-
-            Duration offset = Duration.getInstance(lag.getDuration()-1, lag.getUnits());
-            return calendar.getDate(task.getEarlyStart(), offset);
+            return earlyStart;
          }
 
          case START_FINISH:
