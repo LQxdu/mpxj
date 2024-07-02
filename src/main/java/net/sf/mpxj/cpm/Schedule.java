@@ -134,17 +134,9 @@ public class Schedule
 
          case START_FINISH:
          {
-            LocalDateTime lateFinish = relation.getSourceTask().getLateFinish();
-            lateFinish = calendar.getNextWorkStart(lateFinish);
-            Duration taskDuration = relation.getTargetTask().getDuration();
-            LocalDateTime adjustedLateFinish = calendar.getDate(lateFinish, taskDuration);
-
-            adjustedLateFinish = calendar.getDate(adjustedLateFinish, relation.getLag().negate());
-            if (adjustedLateFinish.isAfter(projectFinishDate))
-            {
-               return projectFinishDate;
-            }
-            return adjustedLateFinish;
+            LocalDateTime lateFinish = calendar.getDate(relation.getSourceTask().getLateFinish(), relation.getTargetTask().getDuration());
+            lateFinish = calendar.getDate(lateFinish, relation.getLag().negate());
+            return lateFinish.isAfter(projectFinishDate) ?  projectFinishDate : lateFinish;
          }
 
          default:
