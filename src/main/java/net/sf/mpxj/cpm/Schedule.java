@@ -89,9 +89,14 @@ public class Schedule
 
          case FINISH_FINISH:
          {
-            Duration taskDuration = task.getDuration();
-            Duration taskOffset = Duration.getInstance(-taskDuration.getDuration(), taskDuration.getUnits());
-            return calendar.getDate(calendar.getDate(task.getEarlyFinish(), taskOffset), relation.getLag());
+            Duration lag = relation.getLag();
+            if (lag.getDuration() <= 1)
+            {
+               return task.getEarlyStart();
+            }
+
+            Duration offset = Duration.getInstance(lag.getDuration()-1, lag.getUnits());
+            return calendar.getDate(task.getEarlyStart(), offset);
          }
 
          case START_FINISH:
@@ -121,21 +126,19 @@ public class Schedule
 
          case FINISH_FINISH:
          {
-            Duration offset = Duration.getInstance(-relation.getLag().getDuration(), relation.getLag().getUnits());
+            Duration lag = relation.getLag();
+            if (lag.getDuration() <= 1)
+            {
+               return projectFinishDate;
+            }
+
+            Duration offset = Duration.getInstance(-lag.getDuration(), lag.getUnits());
             return calendar.getDate(projectFinishDate, offset);
          }
 
          case START_FINISH:
          {
-//            Task task = relation.getSourceTask();
-//            if (relation.getLag().compareTo(task.getDuration()) > 0)
-//            {
-//               return null;
-//            }
-//            else
-            {
-               return projectFinishDate;
-            }
+            return projectFinishDate;
          }
 
          default:
