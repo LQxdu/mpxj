@@ -4,13 +4,11 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import net.sf.mpxj.Duration;
 import net.sf.mpxj.ProjectCalendar;
 import net.sf.mpxj.ProjectFile;
 import net.sf.mpxj.Relation;
-import net.sf.mpxj.RelationType;
 import net.sf.mpxj.Task;
 
 public class Schedule
@@ -109,13 +107,20 @@ public class Schedule
 
    private LocalDateTime calculateLateFinish(ProjectCalendar calendar, LocalDateTime projectFinishDate, Relation relation)
    {
-      if (relation.getType() == RelationType.START_START)
+      switch (relation.getType())
       {
-         Duration offset = Duration.getInstance(-relation.getLag().getDuration(), relation.getLag().getUnits());
-         return calendar.getDate(projectFinishDate, offset);
-      }
+         case START_START:
+         case FINISH_FINISH:
+         {
+            Duration offset = Duration.getInstance(-relation.getLag().getDuration(), relation.getLag().getUnits());
+            return calendar.getDate(projectFinishDate, offset);
+         }
 
-      return relation.getSourceTask().getLateStart();
+         default:
+         {
+            return relation.getSourceTask().getLateStart();
+         }
+      }
    }
 
    private final ProjectFile m_file;
