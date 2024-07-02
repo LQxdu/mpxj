@@ -12,7 +12,7 @@ public class CpmTest
 {
    public static void main(String[] argv) throws Exception
    {
-      new CpmTest().process("/Users/joniles/Downloads/cpm-sample-sf-5.mpp");
+      new CpmTest().process("/Users/joniles/Downloads/cpm-sample-ff-5.mpp");
    }
 
    public void process(String file) throws Exception
@@ -26,6 +26,8 @@ public class CpmTest
       {
          compare(baselineTask, working.getTaskByUniqueID(baselineTask.getUniqueID()));
       }
+
+      System.out.println(m_errorCount + " errors");
    }
 
    private void compare(Task baseline, Task working)
@@ -54,8 +56,11 @@ public class CpmTest
             // throw new RuntimeException(baseline + " " + field + " baseline=" + baselineDate + " working=" + workingDate);
             //System.out.println(baseline + " " + field + " baseline=" + baselineDate + " working=" + workingDate);
             System.out.print(" FAIL");
+            ++m_errorCount;
          }
       }
       System.out.println();
    }
+
+   private int m_errorCount;
 }

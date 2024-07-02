@@ -63,8 +63,7 @@ public class Schedule
             lateFinish = successors.stream().map(r -> calculateLateFinish(calendar, projectFinishDate, r)).min(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing late start date"));
          }
 
-         Duration duration = task.getDuration();
-         LocalDateTime lateStart = calendar.getDate(lateFinish, Duration.getInstance(-duration.getDuration(), duration.getUnits()));
+         LocalDateTime lateStart = calendar.getDate(lateFinish, task.getDuration().negate());
 
          task.setLateFinish(calendar.getPreviousWorkFinish(lateFinish));
          task.setLateStart(lateStart);
@@ -89,9 +88,7 @@ public class Schedule
 
          case FINISH_FINISH:
          {
-            Duration duration = relation.getSourceTask().getDuration();
-            duration = Duration.getInstance(-duration.getDuration(), duration.getUnits());
-            LocalDateTime earlyStart = calendar.getDate(task.getEarlyFinish(), duration);
+            LocalDateTime earlyStart = calendar.getDate(task.getEarlyFinish(), relation.getSourceTask().getDuration().negate());
 
             earlyStart = calendar.getDate(earlyStart, relation.getLag());
 
@@ -104,9 +101,7 @@ public class Schedule
 
          case START_FINISH:
          {
-            Duration taskDuration = relation.getSourceTask().getDuration();
-            Duration taskOffset = Duration.getInstance(-taskDuration.getDuration(), taskDuration.getUnits());
-            return calendar.getDate(calendar.getDate(task.getEarlyStart(), taskOffset), relation.getLag());
+            return calendar.getDate(calendar.getDate(task.getEarlyStart(), relation.getSourceTask().getDuration().negate()), relation.getLag());
          }
 
          default:
@@ -122,9 +117,8 @@ public class Schedule
       {
          case START_START:
          {
-            Duration offset = Duration.getInstance(-relation.getLag().getDuration(), relation.getLag().getUnits());
             LocalDateTime lateFinish = calendar.getDate(relation.getSourceTask().getLateStart(), relation.getTargetTask().getDuration());
-            return calendar.getDate(lateFinish, offset);
+            return calendar.getDate(lateFinish, relation.getLag().negate());
          }
 
          case FINISH_FINISH:
@@ -135,8 +129,7 @@ public class Schedule
                return projectFinishDate;
             }
 
-            Duration offset = Duration.getInstance(-lag.getDuration(), lag.getUnits());
-            return calendar.getDate(projectFinishDate, offset);
+            return calendar.getDate(projectFinishDate, lag.negate());
          }
 
          case START_FINISH:
@@ -146,8 +139,7 @@ public class Schedule
             Duration taskDuration = relation.getTargetTask().getDuration();
             LocalDateTime adjustedLateFinish = calendar.getDate(lateFinish, taskDuration);
 
-            Duration lagOffset = Duration.getInstance(-relation.getLag().getDuration(), relation.getLag().getUnits());
-            adjustedLateFinish = calendar.getDate(adjustedLateFinish, lagOffset);
+            adjustedLateFinish = calendar.getDate(adjustedLateFinish, relation.getLag().negate());
             if (adjustedLateFinish.isAfter(projectFinishDate))
             {
                return projectFinishDate;
