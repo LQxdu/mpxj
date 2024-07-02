@@ -38,13 +38,16 @@ public class Schedule
             earlyStart = predecessors.stream().map(r -> calculateEarlyStart(calendar, r)).max(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing early start date"));
          }
 
+         earlyStart = calendar.getNextWorkStart(earlyStart);
          LocalDateTime earlyFinish = calendar.getDate(earlyStart, task.getDuration());
-         task.setEarlyStart(calendar.getNextWorkStart(earlyStart));
+         task.setEarlyStart(earlyStart);
          task.setEarlyFinish(earlyFinish);
       }
 
       LocalDateTime projectFinishDate = tasks.stream().map(Task::getEarlyFinish).max(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing early finish date"));
+      System.out.println("Project Finish Date: " + projectFinishDate);
 
+      // Backward pass
       Collections.reverse(tasks);
       for (Task task : tasks)
       {
@@ -110,10 +113,29 @@ public class Schedule
       switch (relation.getType())
       {
          case START_START:
+         {
+            Duration offset = Duration.getInstance(-relation.getLag().getDuration(), relation.getLag().getUnits());
+            LocalDateTime lateFinish = calendar.getDate(relation.getSourceTask().getLateStart(), relation.getTargetTask().getDuration());
+            return calendar.getDate(lateFinish, offset);
+         }
+
          case FINISH_FINISH:
          {
             Duration offset = Duration.getInstance(-relation.getLag().getDuration(), relation.getLag().getUnits());
             return calendar.getDate(projectFinishDate, offset);
+         }
+
+         case START_FINISH:
+         {
+//            Task task = relation.getSourceTask();
+//            if (relation.getLag().compareTo(task.getDuration()) > 0)
+//            {
+//               return null;
+//            }
+//            else
+            {
+               return projectFinishDate;
+            }
          }
 
          default:

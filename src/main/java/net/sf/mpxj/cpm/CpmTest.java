@@ -11,7 +11,7 @@ public class CpmTest
 {
    public static void main(String[] argv) throws Exception
    {
-      new CpmTest().process("/Users/joniles/Downloads/cpm-sample-1a.mpp");
+      new CpmTest().process("/Users/joniles/Downloads/cpm-sample-4.mpp");
    }
 
    public void process(String file) throws Exception
