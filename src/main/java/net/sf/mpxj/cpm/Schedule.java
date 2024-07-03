@@ -120,8 +120,15 @@ public class Schedule
       {
          case START_START:
          {
-            LocalDateTime lateStart = calendar.getNextWorkStart(calendar.getDate(successorTask.getLateStart(), relation.getLag().negate()));
-            lateFinish = calendar.getDate(lateStart, predecessorTask.getDuration());
+//            if (successorTask.getEarlyStart().isBefore(successorTask.getLateStart()))
+//            {
+//               lateFinish = projectFinishDate;
+//            }
+//            else
+            {
+               LocalDateTime lateStart = calendar.getNextWorkStart(calendar.getDate(successorTask.getLateStart(), relation.getLag().negate()));
+               lateFinish = calendar.getDate(lateStart, predecessorTask.getDuration());
+            }
             break;
          }
 
@@ -145,7 +152,17 @@ public class Schedule
          }
       }
 
-      return lateFinish.isAfter(projectFinishDate) ?  projectFinishDate : lateFinish;
+      if (lateFinish.isAfter(projectFinishDate))
+      {
+         return projectFinishDate;
+      }
+
+//      if (lateFinish.isBefore(predecessorTask.getEarlyFinish()))
+//      {
+//         return predecessorTask.getEarlyFinish();
+//      }
+
+      return lateFinish;
    }
 
    private final ProjectFile m_file;

@@ -13,7 +13,7 @@ public class CpmTest
    public static void main(String[] argv) throws Exception
    {
       CpmTest test = new CpmTest();
-
+/*
       test.process("/Users/joniles/Downloads/cpm-sample-fs-1.mpp");
       test.process("/Users/joniles/Downloads/cpm-sample-fs-2.mpp");
       test.process("/Users/joniles/Downloads/cpm-sample-fs-3.mpp");
@@ -31,10 +31,12 @@ public class CpmTest
       test.process("/Users/joniles/Downloads/cpm-sample-ff-3.mpp");
       test.process("/Users/joniles/Downloads/cpm-sample-ff-4.mpp");
       test.process("/Users/joniles/Downloads/cpm-sample-ff-5.mpp");
-
+*/
       test.process("/Users/joniles/Downloads/cpm-sample-ss-1.mpp");
-//      test.process("/Users/joniles/Downloads/cpm-sample-ss-2.mpp");
-//      test.process("/Users/joniles/Downloads/cpm-sample-ss-3.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-ss-2.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-ss-3.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-ss-4.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-ss-5.mpp");
    }
 
    public void process(String file) throws Exception
