@@ -141,7 +141,7 @@ public class Schedule
 
          default:
          {
-            return relation.getSourceTask().getLateStart();
+            return calendar.getDate(relation.getSourceTask().getLateStart(), relation.getLag().negate());
          }
       }
    }

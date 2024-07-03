@@ -428,7 +428,7 @@ public final class Duration implements Comparable<Duration>
 
    public Duration negate()
    {
-      return Duration.getInstance(-m_duration, m_units);
+      return m_duration == 0 ? this : Duration.getInstance(-m_duration, m_units);
    }
 
    @Override public String toString()
