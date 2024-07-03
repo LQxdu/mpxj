@@ -45,7 +45,6 @@ public class Schedule
       }
 
       LocalDateTime projectFinishDate = tasks.stream().map(Task::getEarlyFinish).max(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing early finish date"));
-      System.out.println("Project Finish Date: " + projectFinishDate);
 
       // Backward pass
       Collections.reverse(tasks);
@@ -113,12 +112,16 @@ public class Schedule
 
    private LocalDateTime calculateLateFinish(ProjectCalendar calendar, LocalDateTime projectFinishDate, Relation relation)
    {
+      Task predecessorTask = relation.getTargetTask();
+      Task successorTask = relation.getSourceTask();
+
       switch (relation.getType())
       {
          case START_START:
          {
-            LocalDateTime lateFinish = calendar.getDate(relation.getSourceTask().getLateStart(), relation.getTargetTask().getDuration());
-            return calendar.getDate(lateFinish, relation.getLag().negate());
+            LocalDateTime lateStart = calendar.getNextWorkStart(calendar.getDate(successorTask.getLateStart(), relation.getLag().negate()));
+            LocalDateTime lateFinish = calendar.getDate(lateStart, predecessorTask.getDuration());
+            return lateFinish.isAfter(projectFinishDate) ?  projectFinishDate : lateFinish;
          }
 
          case FINISH_FINISH:
@@ -134,14 +137,15 @@ public class Schedule
 
          case START_FINISH:
          {
-            LocalDateTime lateFinish = calendar.getDate(relation.getSourceTask().getLateFinish(), relation.getTargetTask().getDuration());
+            LocalDateTime lateFinish = calendar.getDate(successorTask.getLateFinish(), predecessorTask.getDuration());
             lateFinish = calendar.getDate(lateFinish, relation.getLag().negate());
             return lateFinish.isAfter(projectFinishDate) ?  projectFinishDate : lateFinish;
          }
 
          default:
          {
-            return calendar.getDate(relation.getSourceTask().getLateStart(), relation.getLag().negate());
+            LocalDateTime lateFinish = calendar.getDate(successorTask.getLateStart(), relation.getLag().negate());
+            return lateFinish.isAfter(projectFinishDate) ?  projectFinishDate : lateFinish;
          }
       }
    }

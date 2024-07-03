@@ -12,11 +12,37 @@ public class CpmTest
 {
    public static void main(String[] argv) throws Exception
    {
-      new CpmTest().process("/Users/joniles/Downloads/cpm-sample-fs-5a.mpp");
+      CpmTest test = new CpmTest();
+
+      test.process("/Users/joniles/Downloads/cpm-sample-fs-1.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-fs-2.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-fs-3.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-fs-4.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-fs-5.mpp");
+
+      test.process("/Users/joniles/Downloads/cpm-sample-sf-1.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-sf-2.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-sf-3.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-sf-4.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-sf-5.mpp");
+
+      test.process("/Users/joniles/Downloads/cpm-sample-ff-1.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-ff-2.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-ff-3.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-ff-4.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-ff-5.mpp");
+
+      test.process("/Users/joniles/Downloads/cpm-sample-ss-1.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-ss-2.mpp");
+      test.process("/Users/joniles/Downloads/cpm-sample-ss-3.mpp");
    }
 
    public void process(String file) throws Exception
    {
+      System.out.print("Processing " + file + " ... ");
+      m_errorCount = 0;
+      m_buffer.setLength(0);
+
       ProjectFile baseline = new UniversalProjectReader().read(file);
       ProjectFile working = new UniversalProjectReader().read(file);
 
@@ -27,7 +53,16 @@ public class CpmTest
          compare(baselineTask, working.getTaskByUniqueID(baselineTask.getUniqueID()));
       }
 
-      System.out.println(m_errorCount + " errors");
+      if (m_errorCount == 0)
+      {
+         System.out.println("done.");
+      }
+      else
+      {
+         System.out.println("failed.");
+         System.out.println(m_buffer);
+         System.out.println(m_errorCount + " errors");
+      }
    }
 
    private void compare(Task baseline, Task working)
@@ -43,7 +78,8 @@ public class CpmTest
       LocalDateTime baselineDate = (LocalDateTime)baseline.get(field);
       LocalDateTime workingDate = (LocalDateTime)working.get(field);
 
-      System.out.print(baseline + " " + field + " baseline=" + baselineDate + " working=" + workingDate);
+      m_buffer.append(baseline + " " + field + " baseline=" + baselineDate + " working=" + workingDate);
+
       if (!baselineDate.isEqual(workingDate))
       {
          ProjectCalendar calendar = baseline.getEffectiveCalendar();
@@ -53,14 +89,14 @@ public class CpmTest
          }
          else
          {
-            // throw new RuntimeException(baseline + " " + field + " baseline=" + baselineDate + " working=" + workingDate);
-            //System.out.println(baseline + " " + field + " baseline=" + baselineDate + " working=" + workingDate);
-            System.out.print(" FAIL");
+            m_buffer.append(" FAIL");
             ++m_errorCount;
          }
       }
-      System.out.println();
+
+      m_buffer.append("\n");
    }
 
    private int m_errorCount;
+   private final StringBuffer m_buffer = new StringBuffer();
 }
