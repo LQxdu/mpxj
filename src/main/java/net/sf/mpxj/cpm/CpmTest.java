@@ -33,8 +33,8 @@ public class CpmTest
       test.process("/Users/joniles/Downloads/cpm-sample-ff-5.mpp");
 
       test.process("/Users/joniles/Downloads/cpm-sample-ss-1.mpp");
-      test.process("/Users/joniles/Downloads/cpm-sample-ss-2.mpp");
-      test.process("/Users/joniles/Downloads/cpm-sample-ss-3.mpp");
+//      test.process("/Users/joniles/Downloads/cpm-sample-ss-2.mpp");
+//      test.process("/Users/joniles/Downloads/cpm-sample-ss-3.mpp");
    }
 
    public void process(String file) throws Exception

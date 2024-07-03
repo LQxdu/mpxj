@@ -114,40 +114,38 @@ public class Schedule
    {
       Task predecessorTask = relation.getTargetTask();
       Task successorTask = relation.getSourceTask();
+      LocalDateTime lateFinish;
 
       switch (relation.getType())
       {
          case START_START:
          {
             LocalDateTime lateStart = calendar.getNextWorkStart(calendar.getDate(successorTask.getLateStart(), relation.getLag().negate()));
-            LocalDateTime lateFinish = calendar.getDate(lateStart, predecessorTask.getDuration());
-            return lateFinish.isAfter(projectFinishDate) ?  projectFinishDate : lateFinish;
+            lateFinish = calendar.getDate(lateStart, predecessorTask.getDuration());
+            break;
          }
 
          case FINISH_FINISH:
          {
-            Duration lag = relation.getLag();
-            if (lag.getDuration() < 1)
-            {
-               return projectFinishDate;
-            }
-
-            return calendar.getDate(projectFinishDate, lag.negate());
+            lateFinish = calendar.getDate(projectFinishDate, relation.getLag().negate());
+            break;
          }
 
          case START_FINISH:
          {
-            LocalDateTime lateFinish = calendar.getDate(successorTask.getLateFinish(), predecessorTask.getDuration());
+            lateFinish = calendar.getDate(successorTask.getLateFinish(), predecessorTask.getDuration());
             lateFinish = calendar.getDate(lateFinish, relation.getLag().negate());
-            return lateFinish.isAfter(projectFinishDate) ?  projectFinishDate : lateFinish;
+            break;
          }
 
          default:
          {
-            LocalDateTime lateFinish = calendar.getDate(successorTask.getLateStart(), relation.getLag().negate());
-            return lateFinish.isAfter(projectFinishDate) ?  projectFinishDate : lateFinish;
+            lateFinish = calendar.getDate(successorTask.getLateStart(), relation.getLag().negate());
+            break;
          }
       }
+
+      return lateFinish.isAfter(projectFinishDate) ?  projectFinishDate : lateFinish;
    }
 
    private final ProjectFile m_file;
