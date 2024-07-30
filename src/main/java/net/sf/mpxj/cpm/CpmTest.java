@@ -32,7 +32,8 @@ public class CpmTest
 
       for(File file : fileList)
       {
-         if (EXCLUDED_FILES.contains(file.getName().toLowerCase()))
+         String name = file.getName().toLowerCase();
+         if (EXCLUDED_FILES.contains(name) || (!INCLUDED_FILES.isEmpty() && !INCLUDED_FILES.contains(name)))
          {
             continue;
          }
@@ -202,6 +203,12 @@ public class CpmTest
    {
       EXCLUDED_FILES.add("photographic-magic.mpp"); // External tasks used but not visible in MSP
       EXCLUDED_FILES.add("oppressive-pitfall.mpp"); // Summary task logic
+      EXCLUDED_FILES.add("bizarre-doomsday.mpp"); // Manually scheduled task without a explicitly supplied dates
+   }
 
+   private static final Set<String> INCLUDED_FILES = new HashSet<>();
+   static
+   {
+      //INCLUDED_FILES.add("");
    }
 }

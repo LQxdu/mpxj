@@ -12,6 +12,7 @@ import net.sf.mpxj.ProjectCalendar;
 import net.sf.mpxj.ProjectFile;
 import net.sf.mpxj.Relation;
 import net.sf.mpxj.Task;
+import net.sf.mpxj.TaskMode;
 import net.sf.mpxj.common.LocalDateTimeHelper;
 
 public class Schedule
@@ -33,31 +34,39 @@ public class Schedule
 
          if (task.getActualStart() == null)
          {
-            List<Relation> predecessors = task.getPredecessors();
-            if (predecessors.isEmpty())
+            if (task.getTaskMode() == TaskMode.MANUALLY_SCHEDULED)
             {
-               //earlyStart = projectStartDate;
-
-               switch (task.getConstraintType())
-               {
-                  case START_NO_EARLIER_THAN:
-                  {
-                     earlyStart = task.getConstraintDate();
-                     break;
-                  }
-
-                  default:
-                  {
-                     earlyStart = projectStartDate;
-                     break;
-                  }
-               }
+               // TODO: we need to be able to identify where NO start date has been supplied, which appears to trigger using ScheduledStart rather than Start
+               earlyStart = task.getStart();
             }
             else
             {
-               earlyStart = predecessors.stream().map(r -> calculateEarlyStart(calendar, r)).max(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing early start date"));
+               List<Relation> predecessors = task.getPredecessors();
+               if (predecessors.isEmpty())
+               {
+                  //earlyStart = projectStartDate;
+
+                  switch (task.getConstraintType())
+                  {
+                     case START_NO_EARLIER_THAN:
+                     {
+                        earlyStart = task.getConstraintDate();
+                        break;
+                     }
+
+                     default:
+                     {
+                        earlyStart = projectStartDate;
+                        break;
+                     }
+                  }
+               }
+               else
+               {
+                  earlyStart = predecessors.stream().map(r -> calculateEarlyStart(calendar, r)).max(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing early start date"));
+               }
+               earlyStart = calendar.getNextWorkStart(earlyStart);
             }
-            earlyStart = calendar.getNextWorkStart(earlyStart);
          }
          else
          {
@@ -85,11 +94,11 @@ public class Schedule
 
                case START_NO_LATER_THAN:
                {
-//                  if (earlyStart.isAfter(task.getConstraintDate()))
-//                  {
-//                     earlyStart = task.getConstraintDate();
-//                  }
-//                  break;
+                  //                  if (earlyStart.isAfter(task.getConstraintDate()))
+                  //                  {
+                  //                     earlyStart = task.getConstraintDate();
+                  //                  }
+                  //                  break;
                }
             }
          }
