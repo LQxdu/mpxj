@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import net.sf.mpxj.ConstraintType;
 import net.sf.mpxj.Duration;
 import net.sf.mpxj.ProjectCalendar;
 import net.sf.mpxj.ProjectFile;
@@ -29,16 +30,62 @@ public class Schedule
          ProjectCalendar calendar = task.getEffectiveCalendar();
          LocalDateTime earlyStart;
 
-         if (predecessors.isEmpty())
+         if (task.getActualStart() == null)
          {
-            earlyStart = projectStartDate;
+            if (predecessors.isEmpty())
+            {
+               //earlyStart = projectStartDate;
+
+               switch (task.getConstraintType())
+               {
+                  case START_NO_EARLIER_THAN:
+                  {
+                     earlyStart = task.getConstraintDate();
+                     break;
+                  }
+
+                  default:
+                  {
+                     earlyStart = projectStartDate;
+                     break;
+                  }
+               }
+            }
+            else
+            {
+               earlyStart = predecessors.stream().map(r -> calculateEarlyStart(calendar, r)).max(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing early start date"));
+            }
+            earlyStart = calendar.getNextWorkStart(earlyStart);
          }
          else
          {
-            earlyStart = predecessors.stream().map(r -> calculateEarlyStart(calendar, r)).max(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing early start date"));
+            earlyStart = task.getActualStart();
          }
 
-         earlyStart = calendar.getNextWorkStart(earlyStart);
+         if (task.getConstraintType() != null)
+         {
+            switch (task.getConstraintType())
+            {
+               case START_NO_EARLIER_THAN:
+               {
+                  if (earlyStart.isBefore(task.getConstraintDate()))
+                  {
+                     earlyStart = task.getConstraintDate();
+                  }
+                  break;
+               }
+
+               case START_NO_LATER_THAN:
+               {
+//                  if (earlyStart.isAfter(task.getConstraintDate()))
+//                  {
+//                     earlyStart = task.getConstraintDate();
+//                  }
+//                  break;
+               }
+            }
+         }
+
          LocalDateTime earlyFinish = calendar.getDate(earlyStart, task.getDuration());
          task.setEarlyStart(earlyStart);
          task.setEarlyFinish(earlyFinish);
@@ -91,10 +138,10 @@ public class Schedule
 
             earlyStart = calendar.getDate(earlyStart, relation.getLag());
 
-            if (earlyStart.isBefore(task.getEarlyStart()))
-            {
-               earlyStart = task.getEarlyStart();
-            }
+//            if (earlyStart.isBefore(task.getEarlyStart()))
+//            {
+//               earlyStart = task.getEarlyStart();
+//            }
             return earlyStart;
          }
 
