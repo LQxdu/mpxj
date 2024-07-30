@@ -130,6 +130,26 @@ public final class ResourceAssignment extends AbstractFieldContainer<ResourceAss
    }
 
    /**
+    * Returns the remaining units of this resource assignment.
+    *
+    * @return remaining units
+    */
+   public Number getRemainingUnits()
+   {
+      return (Number) get(AssignmentField.REMAINING_ASSIGNMENT_UNITS);
+   }
+
+   /**
+    * Sets the remaining units for this resource assignment.
+    *
+    * @param val remaining units
+    */
+   public void setRemainingUnits(Number val)
+   {
+      set(AssignmentField.REMAINING_ASSIGNMENT_UNITS, val);
+   }
+
+   /**
     * Returns the work of this resource assignment.
     *
     * @return work
@@ -633,6 +653,28 @@ public final class ResourceAssignment extends AbstractFieldContainer<ResourceAss
    public void setRateSource(RateSource source)
    {
       set(AssignmentField.RATE_SOURCE, source);
+   }
+
+   /**
+    * Retrieves the timephased breakdown of the planned work for this
+    * resource assignment.
+    *
+    * @return timephased planned work
+    */
+   public List<TimephasedWork> getTimephasedPlannedWork()
+   {
+      return m_timephasedPlannedWork == null ? null : m_timephasedPlannedWork.getData();
+   }
+
+   /**
+    * Sets the timephased breakdown of the planned work for this
+    * resource assignment.
+    *
+    * @param data timephased data
+    */
+   public void setTimephasedPlannedWork(TimephasedWorkContainer data)
+   {
+      m_timephasedPlannedWork = data;
    }
 
    /**
@@ -3154,6 +3196,12 @@ public final class ResourceAssignment extends AbstractFieldContainer<ResourceAss
       return result;
    }
 
+   private Number calculateRemainingAssignmentUnits()
+   {
+      // Default to the planned units if a remaining units value is not available
+      return getUnits();
+   }
+
    /**
     * Supply a default value for the rate index.
     *
@@ -3184,11 +3232,13 @@ public final class ResourceAssignment extends AbstractFieldContainer<ResourceAss
       return Boolean.TRUE;
    }
 
-   private TimephasedWorkContainer m_timephasedWork;
-   private TimephasedCostContainer m_timephasedCost;
+   private TimephasedWorkContainer m_timephasedPlannedWork;
 
    private TimephasedWorkContainer m_timephasedActualWork;
    private TimephasedCostContainer m_timephasedActualCost;
+
+   private TimephasedWorkContainer m_timephasedWork;
+   private TimephasedCostContainer m_timephasedCost;
 
    private TimephasedWorkContainer m_timephasedOvertimeWork;
    private TimephasedWorkContainer m_timephasedActualOvertimeWork;
@@ -3226,6 +3276,7 @@ public final class ResourceAssignment extends AbstractFieldContainer<ResourceAss
       CALCULATED_FIELD_MAP.put(AssignmentField.WORK_VARIANCE, ResourceAssignment::calculateWorkVariance);
       CALCULATED_FIELD_MAP.put(AssignmentField.START, ResourceAssignment::calculateStart);
       CALCULATED_FIELD_MAP.put(AssignmentField.FINISH, ResourceAssignment::calculateFinish);
+      CALCULATED_FIELD_MAP.put(AssignmentField.REMAINING_ASSIGNMENT_UNITS, ResourceAssignment::calculateRemainingAssignmentUnits);
       CALCULATED_FIELD_MAP.put(AssignmentField.RATE_INDEX, ResourceAssignment::defaultRateIndex);
       CALCULATED_FIELD_MAP.put(AssignmentField.RATE_SOURCE, ResourceAssignment::defaultRateSource);
       CALCULATED_FIELD_MAP.put(AssignmentField.CALCULATE_COSTS_FROM_UNITS, ResourceAssignment::defaultCalculateCostsFromUnits);

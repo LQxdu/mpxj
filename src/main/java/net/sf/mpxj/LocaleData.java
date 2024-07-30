@@ -1747,7 +1747,7 @@ public final class LocaleData extends ListResourceBundle
       ASSIGNMENT_COLUMNS_ARRAY[AssignmentField.REMAINING_EARLY_FINISH.getValue()] = "Remaining Early Finish";
       ASSIGNMENT_COLUMNS_ARRAY[AssignmentField.REMAINING_LATE_START.getValue()] = "Remaining Late Start";
       ASSIGNMENT_COLUMNS_ARRAY[AssignmentField.REMAINING_LATE_FINISH.getValue()] = "Remaining Late Finish";
-
+      ASSIGNMENT_COLUMNS_ARRAY[AssignmentField.REMAINING_ASSIGNMENT_UNITS.getValue()] = "Remaining Assignment Units";
       ASSIGNMENT_COLUMNS_ARRAY[AssignmentField.HYPERLINK.getValue()] = "Hyperlink";
       ASSIGNMENT_COLUMNS_ARRAY[AssignmentField.HYPERLINK_ADDRESS.getValue()] = "Hyperlink Address";
       ASSIGNMENT_COLUMNS_ARRAY[AssignmentField.HYPERLINK_SUBADDRESS.getValue()] = "Hyperlink Subaddress";
@@ -2294,6 +2294,8 @@ public final class LocaleData extends ListResourceBundle
       PROJECT_COLUMNS_ARRAY[ProjectField.ACTIVITY_ID_INCREMENT_BASED_ON_SELECTED_ACTIVITY.getValue()] = "Activity ID Increment Based On Selected Activity";
       PROJECT_COLUMNS_ARRAY[ProjectField.BASELINE_CALENDAR_NAME.getValue()] = "Baseline Calendar Name";
       PROJECT_COLUMNS_ARRAY[ProjectField.PROJECT_IS_BASELINE.getValue()] = "Project Is Baseline";
+      PROJECT_COLUMNS_ARRAY[ProjectField.PROJECT_WEBSITE_URL.getValue()] = "Project Website URL";
+      PROJECT_COLUMNS_ARRAY[ProjectField.NOTES.getValue()] = "Notes";
    }
 
    private static final Object[][] RESOURCES =

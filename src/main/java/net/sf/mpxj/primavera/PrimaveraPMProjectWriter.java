@@ -155,6 +155,7 @@ final class PrimaveraPMProjectWriter
          m_activityTypePopulated = m_projectFile.getTasks().getPopulatedFields().contains(TaskField.ACTIVITY_TYPE);
          m_wbsSequence = new ObjectSequence(0);
          m_userDefinedFields = UdfHelper.getUserDefinedFieldsSet(m_projectFile);
+         m_projectFromPrimavera = "Primavera".equals(m_projectFile.getProjectProperties().getFileApplication());
 
          if (baseline)
          {
@@ -556,8 +557,11 @@ final class PrimaveraPMProjectWriter
       project.setUseProjectBaselineForEarnedValue(Boolean.TRUE);
       project.setWBSCodeSeparator(mpxj.getWbsCodeSeparator());
       project.setLocationObjectId(mpxj.getLocationUniqueID());
+      project.setWebSiteURL(mpxj.getProjectWebsiteUrl());
 
       writeScheduleOptions(project.getScheduleOptions());
+
+      writeWbsNote(null, mpxj.getNotesObject());
    }
 
    private void writeProjectProperties(BaselineProjectType project)
@@ -621,8 +625,11 @@ final class PrimaveraPMProjectWriter
       project.setBaselineTypeName(mpxj.getBaselineTypeName());
       project.setBaselineTypeObjectId(mpxj.getBaselineProjectUniqueID());
       project.setLastBaselineUpdateDate(mpxj.getLastBaselineUpdateDate());
+      project.setWebSiteURL(mpxj.getProjectWebsiteUrl());
 
       writeScheduleOptions(project.getScheduleOptions());
+
+      writeWbsNote(null, mpxj.getNotesObject());
    }
 
    private void writeScheduleOptions(List<ScheduleOptionsType> list)
@@ -890,7 +897,7 @@ final class PrimaveraPMProjectWriter
 
       xml.setObjectId(mpxj.getUniqueID());
       xml.setName(mpxj.getName());
-      xml.setId(mpxj.getResourceID());
+      xml.setId(getRoleID(mpxj));
       xml.setCalculateCostFromUnits(Boolean.valueOf(mpxj.getCalculateCostsFromUnits()));
       xml.setResponsibilities(getNotes(mpxj.getNotesObject()));
       xml.setSequenceNumber(mpxj.getSequenceNumber());
@@ -996,7 +1003,7 @@ final class PrimaveraPMProjectWriter
 
       xml.getUDF().addAll(writeUserDefinedFieldAssignments(FieldTypeClass.TASK, true, mpxj));
 
-      writeWbsNote(mpxj);
+      writeWbsNote(mpxj.getUniqueID(), mpxj.getNotesObject());
    }
 
    /**
@@ -1168,7 +1175,7 @@ final class PrimaveraPMProjectWriter
       xml.setPlannedStartDate(plannedStart);
       xml.setProjectObjectId(m_projectObjectID);
       xml.setRemainingCost(getCurrency(mpxj.getRemainingCost()));
-      xml.setRemainingDuration(getDurationInHours(mpxj.getRemainingWork()));
+
       xml.setStartDate(mpxj.getStart());
       xml.setWBSObjectId(task.getParentTaskUniqueID());
       xml.getUDF().addAll(writeUserDefinedFieldAssignments(FieldTypeClass.ASSIGNMENT, false, mpxj));
@@ -1185,6 +1192,32 @@ final class PrimaveraPMProjectWriter
       xml.setPlannedUnitsPerTime(unitsHelper.getPlannedUnitsPerTime());
       xml.setRemainingUnits(unitsHelper.getRemainingUnits());
       xml.setRemainingUnitsPerTime(unitsHelper.getRemainingUnitsPerTime());
+      xml.setRemainingDuration(getResourceAssignmentRemainingDuration(task, mpxj));
+
+      if (m_projectFromPrimavera)
+      {
+         ProjectCalendar calendar = task.getEffectiveCalendar();
+         xml.setPlannedCurve(TimephasedHelper.write(calendar, mpxj.getTimephasedPlannedWork()));
+         xml.setActualCurve(TimephasedHelper.write(calendar, mpxj.getTimephasedActualWork()));
+         xml.setRemainingCurve(TimephasedHelper.write(calendar, mpxj.getTimephasedWork()));
+      }
+   }
+
+   private Double getResourceAssignmentRemainingDuration(Task task, ResourceAssignment mpxj)
+   {
+      if (mpxj.getActualFinish() != null)
+      {
+         return Double.valueOf(0);
+      }
+
+      if (mpxj.getRemainingUnits() == null || mpxj.getRemainingWork() == null || mpxj.getRemainingUnits().doubleValue() == 0)
+      {
+         return getDurationInHours(task.getEffectiveCalendar().getWork(mpxj.getRemainingEarlyStart(), mpxj.getRemainingEarlyFinish(), TimeUnit.HOURS));
+      }
+
+      double workPerHour = mpxj.getRemainingUnits().doubleValue();
+      double remainingWork = mpxj.getRemainingWork().getDuration();
+      return Double.valueOf((remainingWork * 100.0) / workPerHour);
    }
 
    /**
@@ -1485,65 +1518,66 @@ final class PrimaveraPMProjectWriter
    }
 
    /**
-    * Write notes for a WBS entry.
+    * Write notes for a WBS or Project entry.
     *
-    * @param task WBS entry.
+    * @param wbsObjectID WBS object ID (null for project notes)
+    * @param notes notes
     */
-   private void writeWbsNote(Task task)
+   private void writeWbsNote(Integer wbsObjectID, Notes notes)
    {
-      String notes = task.getNotes();
-      if (notes.isEmpty())
+      if (notes == null || notes.toString().isEmpty())
       {
          return;
       }
 
-      if (notesAreNativeFormat(task.getNotesObject()))
+      if (notesAreNativeFormat(notes))
       {
-         writeNativeWbsNote(task);
+         writeNativeWbsNote(wbsObjectID, (ParentNotes) notes);
       }
       else
       {
-         writeDefaultWbsNote(task);
+         writeDefaultWbsNote(wbsObjectID, notes.toString());
       }
    }
 
    /**
     * Generate a notebook entry from plain text.
     *
-    * @param task WBS entry
+    * @param wbsObjectID WBS object ID
+    * @param notes notes text
     */
-   private void writeDefaultWbsNote(Task task)
+   private void writeDefaultWbsNote(Integer wbsObjectID, String notes)
    {
       ProjectNoteType xml = m_factory.createProjectNoteType();
       m_projectNotes.add(xml);
 
-      xml.setNote(HtmlHelper.getHtmlFromPlainText(task.getNotes()));
+      xml.setNote(HtmlHelper.getHtmlFromPlainText(notes));
       xml.setNotebookTopicObjectId(m_projectFile.getNotesTopics().getDefaultTopic().getUniqueID());
       xml.setObjectId(m_sequences.getWbsNoteObjectID());
       xml.setProjectObjectId(m_projectObjectID);
-      xml.setWBSObjectId(task.getUniqueID());
+      xml.setWBSObjectId(wbsObjectID);
    }
 
    /**
     * Generate notebook entries from structured notes.
     *
-    * @param task WBS entry
+    * @param wbsObjectID WBS object ID
+    * @param notes notes object
     */
-   private void writeNativeWbsNote(Task task)
+   private void writeNativeWbsNote(Integer wbsObjectID, ParentNotes notes)
    {
-      for (Notes note : ((ParentNotes) task.getNotesObject()).getChildNotes())
+      for (Notes note : notes.getChildNotes())
       {
          StructuredNotes structuredNotes = (StructuredNotes) note;
-         HtmlNotes htmlNotes = (HtmlNotes) structuredNotes.getNotes();
 
          ProjectNoteType xml = m_factory.createProjectNoteType();
          m_projectNotes.add(xml);
 
-         xml.setNote(htmlNotes.getHtml());
+         xml.setNote(getNotes(structuredNotes.getNotes()));
          xml.setNotebookTopicObjectId(structuredNotes.getTopicID());
          xml.setObjectId(structuredNotes.getUniqueID());
          xml.setProjectObjectId(m_projectObjectID);
-         xml.setWBSObjectId(task.getUniqueID());
+         xml.setWBSObjectId(wbsObjectID);
       }
    }
 
@@ -1619,7 +1653,7 @@ final class PrimaveraPMProjectWriter
     */
    private boolean notesAreNativeFormat(Notes notes)
    {
-      return notes instanceof ParentNotes && ((ParentNotes) notes).getChildNotes().stream().allMatch(n -> n instanceof StructuredNotes && ((StructuredNotes) n).getNotes() instanceof HtmlNotes);
+      return notes instanceof ParentNotes && ((ParentNotes) notes).getChildNotes().stream().allMatch(n -> n instanceof StructuredNotes);
    }
 
    /**
@@ -2009,12 +2043,20 @@ final class PrimaveraPMProjectWriter
     */
    private String getResourceID(Resource resource)
    {
-      String result = resource.getResourceID();
-      if (result == null)
-      {
-         result = RESOURCE_ID_PREFIX + resource.getUniqueID();
-      }
-      return result;
+      String id = resource.getResourceID();
+      return id == null || id.isEmpty() ? RESOURCE_ID_PREFIX + resource.getUniqueID() : id;
+   }
+
+   /**
+    * Generate a default Role ID for a role.
+    *
+    * @param role Resource instance
+    * @return generated Role ID
+    */
+   private String getRoleID(Resource role)
+   {
+      String id = role.getResourceID();
+      return id == null || id.isEmpty() ? ROLE_ID_PREFIX + role.getResourceID() : id;
    }
 
    /**
@@ -2030,6 +2072,7 @@ final class PrimaveraPMProjectWriter
 
    private static final String DEFAULT_PROJECT_ID = "PROJECT";
    private static final String RESOURCE_ID_PREFIX = "RESOURCE-";
+   private static final String ROLE_ID_PREFIX = "ROLE-";
    private static final Integer DEFAULT_CURRENCY_ID = Integer.valueOf(1);
 
    private static final String[] DAY_NAMES =
@@ -2062,4 +2105,5 @@ final class PrimaveraPMProjectWriter
    private ObjectSequence m_wbsSequence;
    private Set<FieldType> m_userDefinedFields;
    private boolean m_activityTypePopulated;
+   private boolean m_projectFromPrimavera;
 }

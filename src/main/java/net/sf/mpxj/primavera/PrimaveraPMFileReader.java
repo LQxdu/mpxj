@@ -48,6 +48,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import net.sf.mpxj.BaselineStrategy;
 import net.sf.mpxj.DataType;
+import net.sf.mpxj.TimephasedWorkContainer;
 import net.sf.mpxj.UnitOfMeasure;
 import net.sf.mpxj.UnitOfMeasureContainer;
 import net.sf.mpxj.common.DayOfWeekHelper;
@@ -486,16 +487,19 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
             activityExpenseType = project.getActivityExpense();
          }
 
+         processNotebookTopics(apibo);
+         Map<Integer, Notes> wbsNotes = getWbsNotes(projectNotes);
+         m_projectFile.getProjectProperties().setNotesObject(wbsNotes.get(Integer.valueOf(0)));
+
          processGlobalProperties(apibo);
          processUnitsOfMeasure(apibo);
          processExpenseCategories(apibo);
          processCostAccounts(apibo);
-         processNotebookTopics(apibo);
          processActivityCodes(apibo, activityCodeTypes, activityCodes);
          processCalendars(apibo, calendars);
          processResources(apibo);
          processRoles(apibo);
-         processTasks(wbs, getWbsNotes(projectNotes), activities, getActivityNotes(activityNotes));
+         processTasks(wbs, wbsNotes, activities, getActivityNotes(activityNotes));
          processPredecessors(relationships);
          processWorkContours(apibo);
          processAssignments(assignments);
@@ -587,7 +591,7 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
       boolean summaryTaskOnly = udf.getSubjectArea().equals("WBS");
       String externalName = udf.getTitle();
       DataType dataType = UdfHelper.getDataTypeFromXml(udf.getDataType());
-      UserDefinedField field = new UserDefinedField(udf.getObjectId(), null, externalName, fieldTypeClass, summaryTaskOnly, dataType);
+      UserDefinedField field = new UserDefinedField(m_projectFile, udf.getObjectId(), null, externalName, fieldTypeClass, summaryTaskOnly, dataType);
       m_fieldTypeMap.put(udf.getObjectId(), field);
       m_projectFile.getUserDefinedFields().add(field);
       m_projectFile.getCustomFields().add(field).setAlias(udf.getTitle()).setUniqueID(udf.getObjectId());
@@ -652,6 +656,7 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
       properties.setActivityIdSuffix(project.getActivityIdSuffix());
       properties.setActivityIdIncrement(project.getActivityIdIncrement());
       properties.setActivityIdIncrementBasedOnSelectedActivity(BooleanHelper.getBoolean(project.isActivityIdBasedOnSelectedActivity()));
+      properties.setProjectWebsiteUrl(nullIfEmpty(project.getWebSiteURL()));
 
       m_defaultCalendarObjectID = project.getActivityDefaultCalendarObjectId();
 
@@ -679,6 +684,7 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
       properties.setBaselineTypeUniqueID(project.getBaselineTypeObjectId());
       properties.setLastBaselineUpdateDate(project.getLastBaselineUpdateDate());
       properties.setProjectIsBaseline(true);
+      properties.setProjectWebsiteUrl(project.getWebSiteURL());
 
       m_defaultCalendarObjectID = project.getActivityDefaultCalendarObjectId();
 
@@ -1000,6 +1006,17 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
             ProjectCalendarException pce = calendar.addCalendarException(startDate, endDate);
 
             List<WorkTimeType> workTime = ex.getWorkTime();
+
+            // Special case: a single entry for 00:00-23:59 is treated by P6 as a non-working day
+            if (workTime.size() == 1)
+            {
+               WorkTimeType work = workTime.get(0);
+               if (work == null || (LocalTime.MIDNIGHT.equals(work.getStart()) && NON_WORKING_END_TIME.equals(work.getFinish())))
+               {
+                  continue;
+               }
+            }
+
             for (WorkTimeType work : workTime)
             {
                if (work != null && work.getStart() != null && work.getFinish() != null)
@@ -1855,7 +1872,6 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
       for (ResourceAssignmentType row : assignments)
       {
          Task task = m_projectFile.getTaskByUniqueID(m_activityClashMap.getID(row.getActivityObjectId()));
-
          Integer roleID = m_roleClashMap.getID(row.getRoleObjectId());
          Integer resourceID = row.getResourceObjectId();
 
@@ -1870,6 +1886,7 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
 
          if (task != null && resource != null)
          {
+            ProjectCalendar effectiveCalendar = task.getEffectiveCalendar();
             ResourceAssignment assignment = task.addResourceAssignment(resource);
 
             assignment.setUniqueID(row.getObjectId());
@@ -1886,7 +1903,7 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
             assignment.setGUID(DatatypeConverter.parseUUID(row.getGUID()));
             assignment.setActualOvertimeCost(row.getActualOvertimeCost());
             assignment.setActualOvertimeWork(getDuration(row.getActualOvertimeUnits()));
-            assignment.setWorkContour(m_projectFile.getWorkContours().getByUniqueID(row.getResourceCurveObjectId()));
+            assignment.setWorkContour(CurveHelper.getWorkContour(m_projectFile, row.getResourceCurveObjectId()));
             assignment.setRateIndex(RateTypeHelper.getInstanceFromXml(row.getRateType()));
             assignment.setRole(m_projectFile.getResourceByUniqueID(roleID));
             assignment.setOverrideRate(readRate(row.getCostPerQuantity()));
@@ -1896,13 +1913,13 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
             assignment.setRemainingEarlyStart(row.getRemainingStartDate());
             assignment.setRemainingEarlyFinish(row.getRemainingFinishDate());
 
-            populateField(assignment, AssignmentField.START, AssignmentField.ACTUAL_START, AssignmentField.PLANNED_START);
-            populateField(assignment, AssignmentField.FINISH, AssignmentField.ACTUAL_FINISH, AssignmentField.PLANNED_FINISH);
+            populateField(assignment, AssignmentField.START, AssignmentField.ACTUAL_START, AssignmentField.REMAINING_EARLY_START, AssignmentField.PLANNED_START);
+            populateField(assignment, AssignmentField.FINISH, AssignmentField.ACTUAL_FINISH, AssignmentField.REMAINING_EARLY_FINISH, AssignmentField.PLANNED_FINISH);
 
             // calculate work
             Duration remainingWork = assignment.getRemainingWork();
             Duration actualWork = assignment.getActualWork();
-            Duration totalWork = Duration.add(actualWork, remainingWork, assignment.getEffectiveCalendar());
+            Duration totalWork = Duration.add(actualWork, remainingWork, effectiveCalendar);
             assignment.setWork(totalWork);
 
             // calculate cost
@@ -1917,16 +1934,19 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
             task.setRemainingCost(NumberHelper.sumAsDouble(task.getRemainingCost(), remainingCost));
             task.setCost(NumberHelper.sumAsDouble(task.getCost(), atCompletionCost));
 
-            if (resource.getType() == net.sf.mpxj.ResourceType.MATERIAL)
-            {
-               assignment.setUnits(row.getPlannedUnits());
-            }
-            else // RT_Labor & RT_Equip
-            {
-               assignment.setUnits(Double.valueOf(NumberHelper.getDouble(row.getPlannedUnitsPerTime()) * 100));
-            }
+            assignment.setUnits(Double.valueOf(NumberHelper.getDouble(row.getPlannedUnitsPerTime()) * 100));
+            assignment.setRemainingUnits(Double.valueOf(NumberHelper.getDouble(row.getRemainingUnitsPerTime()) * 100));
 
+            // Add User Defined Fields
             populateUserDefinedFieldValues(assignment, row.getUDF());
+
+            // Read timephased data
+            TimephasedWorkContainer timephasedPlannedWork = TimephasedHelper.read(effectiveCalendar, assignment.getPlannedStart(), row.getPlannedCurve());
+            TimephasedWorkContainer timephasedActualWork = TimephasedHelper.read(effectiveCalendar, assignment.getActualStart(), row.getActualCurve());
+            TimephasedWorkContainer timephasedRemainingWork = TimephasedHelper.read(effectiveCalendar, assignment.getRemainingEarlyStart(), row.getRemainingCurve());
+            assignment.setTimephasedPlannedWork(timephasedPlannedWork);
+            assignment.setTimephasedActualWork(timephasedActualWork);
+            assignment.setTimephasedWork(timephasedRemainingWork);
 
             m_eventManager.fireAssignmentReadEvent(assignment);
          }
@@ -2174,7 +2194,8 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
     */
    private Map<Integer, Notes> getWbsNotes(List<ProjectNoteType> notes)
    {
-      Map<Integer, List<ProjectNoteType>> map = notes.stream().filter(n -> n.getWBSObjectId() != null).collect(Collectors.groupingBy(ProjectNoteType::getWBSObjectId, Collectors.toList()));
+      // Project notes have a null WBS ID. We'll map this to zero to allow us to add them to the map.
+      Map<Integer, List<ProjectNoteType>> map = notes.stream().collect(Collectors.groupingBy(n -> n.getWBSObjectId() == null ? Integer.valueOf(0) : n.getWBSObjectId(), Collectors.toList()));
       return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> new ParentNotes(e.getValue().stream().map(n -> getNote(n.getObjectId(), n.getNotebookTopicObjectId(), n.getNote())).filter(Objects::nonNull).collect(Collectors.toList()))));
    }
 
@@ -2204,7 +2225,7 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
          topic = m_projectFile.getNotesTopics().getDefaultTopic();
       }
 
-      return new StructuredNotes(uniqueID, topic, note);
+      return new StructuredNotes(m_projectFile, uniqueID, topic, note);
    }
 
    /**
@@ -2579,4 +2600,5 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
    private static final WbsRowComparatorPMXML WBS_ROW_COMPARATOR = new WbsRowComparatorPMXML();
 
    private static final Pattern ENCODING_PATTERN = Pattern.compile(".*<\\?xml.*encoding=\"([^\"]+)\".*\\?>.*", Pattern.DOTALL);
+   private static final LocalTime NON_WORKING_END_TIME = LocalTime.of(23, 59);
 }

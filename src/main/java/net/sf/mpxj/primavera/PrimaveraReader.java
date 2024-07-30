@@ -100,6 +100,7 @@ import net.sf.mpxj.common.LocalDateTimeHelper;
 import net.sf.mpxj.common.NumberHelper;
 import net.sf.mpxj.common.ObjectSequence;
 import net.sf.mpxj.common.SlackHelper;
+import net.sf.mpxj.TimephasedWorkContainer;
 
 /**
  * This class provides a generic front end to read project data from
@@ -200,6 +201,7 @@ final class PrimaveraReader
          properties.setActivityIdSuffix(row.getInteger("task_code_base"));
          properties.setActivityIdIncrement(row.getInteger("task_code_step"));
          properties.setActivityIdIncrementBasedOnSelectedActivity(row.getBoolean("task_code_prefix_flag"));
+         properties.setProjectWebsiteUrl(row.getString("proj_url"));
 
          // cannot assign actual calendar yet as it has not been read yet
          m_defaultCalendarID = row.getInteger("clndr_id");
@@ -375,7 +377,7 @@ final class PrimaveraReader
          String internalName = row.getString("udf_type_name");
          String externalName = row.getString("udf_type_label");
          DataType dataType = UdfHelper.getDataTypeFromXer(row.getString("logical_data_type"));
-         UserDefinedField fieldType = new UserDefinedField(fieldId, internalName, externalName, fieldTypeClass, summaryTaskOnly, dataType);
+         UserDefinedField fieldType = new UserDefinedField(m_project, fieldId, internalName, externalName, fieldTypeClass, summaryTaskOnly, dataType);
          container.add(fieldType);
 
          m_udfFields.put(fieldId, fieldType);
@@ -654,7 +656,23 @@ final class PrimaveraReader
    {
       for (StructuredTextRecord exception : exceptions.getChildren())
       {
-         long daysFromEpoch = Integer.parseInt(exception.getAttribute("d"));
+         long daysFromEpoch;
+
+         try
+         {
+            daysFromEpoch = Integer.parseInt(exception.getAttribute("d"));
+         }
+
+         catch (NumberFormatException ex)
+         {
+            if (m_ignoreErrors)
+            {
+               m_project.addIgnoredError(ex);
+               continue;
+            }
+            throw ex;
+         }
+
          LocalDate startEx = EXCEPTION_EPOCH.plusDays(daysFromEpoch);
 
          ProjectCalendarException pce = calendar.addCalendarException(startEx, startEx);
@@ -1333,7 +1351,7 @@ final class PrimaveraReader
                topic = topics.getDefaultTopic();
             }
 
-            list.add(new StructuredNotes(row.getInteger(uniqueIDColumn), topic, notes));
+            list.add(new StructuredNotes(m_project, row.getInteger(uniqueIDColumn), topic, notes));
          }
 
          result.put(entry.getKey(), new ParentNotes(list));
@@ -1734,7 +1752,6 @@ final class PrimaveraReader
       for (Row row : rows)
       {
          Task task = m_project.getTaskByUniqueID(m_activityClashMap.getID(row.getInteger("task_id")));
-
          Integer roleID = m_roleClashMap.getID(row.getInteger("role_id"));
          Integer resourceID = row.getInteger("rsrc_id");
 
@@ -1748,10 +1765,11 @@ final class PrimaveraReader
          Resource resource = m_project.getResourceByUniqueID(resourceID);
          if (task != null && resource != null)
          {
+            ProjectCalendar effectiveCalendar = task.getEffectiveCalendar();
             ResourceAssignment assignment = task.addResourceAssignment(resource);
             processFields(m_assignmentFields, row, assignment);
 
-            assignment.setWorkContour(m_project.getWorkContours().getByUniqueID(row.getInteger("curv_id")));
+            assignment.setWorkContour(CurveHelper.getWorkContour(m_project, row.getInteger("curv_id")));
             assignment.setRateIndex(RateTypeHelper.getInstanceFromXer(row.getString("rate_type")));
             assignment.setRole(m_project.getResourceByUniqueID(roleID));
             assignment.setOverrideRate(readRate(row.getDouble("cost_per_qty")));
@@ -1764,9 +1782,9 @@ final class PrimaveraReader
             Duration remainingWork = assignment.getRemainingWork();
             Duration actualRegularWork = row.getDuration("act_reg_qty");
             Duration actualOvertimeWork = assignment.getActualOvertimeWork();
-            Duration actualWork = Duration.add(actualRegularWork, actualOvertimeWork, assignment.getEffectiveCalendar());
+            Duration actualWork = Duration.add(actualRegularWork, actualOvertimeWork, effectiveCalendar);
             assignment.setActualWork(actualWork);
-            Duration totalWork = Duration.add(actualWork, remainingWork, assignment.getEffectiveCalendar());
+            Duration totalWork = Duration.add(actualWork, remainingWork, effectiveCalendar);
             assignment.setWork(totalWork);
 
             // calculate cost
@@ -1784,17 +1802,19 @@ final class PrimaveraReader
             task.setRemainingCost(NumberHelper.sumAsDouble(task.getRemainingCost(), assignment.getRemainingCost()));
             task.setCost(NumberHelper.sumAsDouble(task.getCost(), assignment.getCost()));
 
-            if (resource.getType() == net.sf.mpxj.ResourceType.MATERIAL)
-            {
-               assignment.setUnits(row.getDouble("target_qty"));
-            }
-            else // RT_Labor & RT_Equip
-            {
-               assignment.setUnits(Double.valueOf(NumberHelper.getDouble(row.getDouble("target_qty_per_hr")) * 100));
-            }
+            assignment.setUnits(Double.valueOf(NumberHelper.getDouble(row.getDouble("target_qty_per_hr")) * 100));
+            assignment.setRemainingUnits(Double.valueOf(NumberHelper.getDouble(row.getDouble("remain_qty_per_hr")) * 100));
 
             // Add User Defined Fields
             populateUserDefinedFieldValues("TASKRSRC", FieldTypeClass.ASSIGNMENT, assignment, assignment.getUniqueID());
+
+            // Read timephased data
+            TimephasedWorkContainer timephasedPlannedWork = TimephasedHelper.read(effectiveCalendar, assignment.getPlannedStart(), row.getString("target_crv"));
+            TimephasedWorkContainer timephasedActualWork = TimephasedHelper.read(effectiveCalendar, assignment.getActualStart(), row.getString("actual_crv"));
+            TimephasedWorkContainer timephasedRemainingWork = TimephasedHelper.read(effectiveCalendar, assignment.getRemainingEarlyStart(), row.getString("remain_crv"));
+            assignment.setTimephasedPlannedWork(timephasedPlannedWork);
+            assignment.setTimephasedActualWork(timephasedActualWork);
+            assignment.setTimephasedWork(timephasedRemainingWork);
 
             m_eventManager.fireAssignmentReadEvent(assignment);
          }
