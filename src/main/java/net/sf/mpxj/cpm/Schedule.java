@@ -1,20 +1,16 @@
 package net.sf.mpxj.cpm;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import net.sf.mpxj.ConstraintType;
-import net.sf.mpxj.Duration;
 import net.sf.mpxj.ProjectCalendar;
 import net.sf.mpxj.ProjectFile;
 import net.sf.mpxj.Relation;
 import net.sf.mpxj.Task;
 import net.sf.mpxj.TaskMode;
-import net.sf.mpxj.common.LocalDateTimeHelper;
 
 public class Schedule
 {
@@ -83,6 +79,16 @@ public class Schedule
                   if (earlyStart.isBefore(task.getConstraintDate()))
                   {
                      earlyStart = task.getConstraintDate();
+                  }
+                  break;
+               }
+
+               case FINISH_NO_LATER_THAN:
+               {
+                  LocalDateTime latestStart = calendar.getDate(task.getConstraintDate(), task.getDuration().negate());
+                  if (earlyStart.isAfter(latestStart))
+                  {
+                     earlyStart = latestStart;
                   }
                   break;
                }
