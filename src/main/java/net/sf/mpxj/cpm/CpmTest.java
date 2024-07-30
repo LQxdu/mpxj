@@ -72,7 +72,7 @@ public class CpmTest
       System.out.print("Processing " + file + " ... ");
       m_forwardErrorCount = 0;
       m_backwardErrorCount = 0;
-      m_buffer.setLength(0);
+      //m_buffer.setLength(0);
 
       m_baselineFile = new UniversalProjectReader().read(file);
       m_workingFile = new UniversalProjectReader().read(file);
@@ -100,6 +100,12 @@ public class CpmTest
 
    private void compare(Task baseline, Task working)
    {
+      // Ignore summary and inactive tasks
+      if (baseline.getSummary() || !baseline.getActive())
+      {
+         return;
+      }
+
       boolean earlyStartFailed = !compare(baseline, working, TaskField.EARLY_START);
       boolean earlyFinishFailed = !compare(baseline, working, TaskField.EARLY_FINISH);
       if (earlyStartFailed || earlyFinishFailed)
@@ -121,7 +127,7 @@ public class CpmTest
       LocalDateTime baselineDate = (LocalDateTime)baseline.get(field);
       LocalDateTime workingDate = (LocalDateTime)working.get(field);
 
-      m_buffer.append(baseline + " " + field + " baseline=" + baselineDate + " working=" + workingDate);
+      //m_buffer.append(baseline + " " + field + " baseline=" + baselineDate + " working=" + workingDate);
 
       if (!baselineDate.isEqual(workingDate))
       {
@@ -132,12 +138,12 @@ public class CpmTest
          }
          else
          {
-            m_buffer.append(" FAIL");
+           // m_buffer.append(" FAIL");
             result = false;
          }
       }
 
-      m_buffer.append("\n");
+      //m_buffer.append("\n");
       return result;
    }
 
@@ -163,6 +169,11 @@ public class CpmTest
       {
          for (Task working : tasks)
          {
+            if (working.getSummary() || !working.getActive())
+            {
+               continue;
+            }
+
             Task baseline = m_baselineFile.getTaskByUniqueID(working.getUniqueID());
             boolean earlyStartFail = !compareDates(baseline, working, TaskField.EARLY_START);
             boolean earlyFinishFail = !compareDates(baseline, working, TaskField.EARLY_FINISH);
@@ -196,7 +207,7 @@ public class CpmTest
    private ProjectFile m_workingFile;
    private int m_forwardErrorCount;
    private int m_backwardErrorCount;
-   private final StringBuffer m_buffer = new StringBuffer();
+   //private final StringBuffer m_buffer = new StringBuffer();
 
    private static final Set<String> EXCLUDED_FILES = new HashSet<>();
    static
