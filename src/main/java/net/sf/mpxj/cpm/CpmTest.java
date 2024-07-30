@@ -3,6 +3,7 @@ package net.sf.mpxj.cpm;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -68,7 +69,8 @@ public class CpmTest
    public void process(String file) throws Exception
    {
       System.out.print("Processing " + file + " ... ");
-      m_errorCount = 0;
+      m_forwardErrorCount = 0;
+      m_backwardErrorCount = 0;
       m_buffer.setLength(0);
 
       m_baselineFile = new UniversalProjectReader().read(file);
@@ -81,7 +83,7 @@ public class CpmTest
          compare(baselineTask, m_workingFile.getTaskByUniqueID(baselineTask.getUniqueID()));
       }
 
-      if (m_errorCount == 0)
+      if (m_forwardErrorCount == 0&& m_backwardErrorCount == 0)
       {
          System.out.println("done.");
       }
@@ -89,7 +91,8 @@ public class CpmTest
       {
          System.out.println("failed.");
          //System.out.println(m_buffer);
-         System.out.println(m_errorCount + " errors");
+         System.out.println("Forward errors: " + m_forwardErrorCount);
+         System.out.println("Backward errors: " + m_backwardErrorCount);
          analyseFailures();
       }
    }
@@ -98,9 +101,17 @@ public class CpmTest
    {
       boolean earlyStartFailed = !compare(baseline, working, TaskField.EARLY_START);
       boolean earlyFinishFailed = !compare(baseline, working, TaskField.EARLY_FINISH);
+      if (earlyStartFailed || earlyFinishFailed)
+      {
+         ++m_forwardErrorCount;
+      }
 
-      compare(baseline, working, TaskField.LATE_START);
-      compare(baseline, working, TaskField.LATE_FINISH);
+      boolean lateStartFailed = !compare(baseline, working, TaskField.LATE_START);
+      boolean lateFinishFailed = !compare(baseline, working, TaskField.LATE_FINISH);
+      if (lateStartFailed || lateFinishFailed)
+      {
+         ++m_backwardErrorCount;
+      }
    }
 
    private boolean compare(Task baseline, Task working, TaskField field)
@@ -121,7 +132,6 @@ public class CpmTest
          else
          {
             m_buffer.append(" FAIL");
-            ++m_errorCount;
             result = false;
          }
       }
@@ -147,22 +157,44 @@ public class CpmTest
    private void analyseFailures() throws CycleException
    {
       List<Task> tasks = new DepthFirstGraphSort(m_workingFile).sort();
-      for (Task working : tasks)
-      {
-         Task baseline = m_baselineFile.getTaskByUniqueID(working.getUniqueID());
-         boolean earlyStartFail = !compareDates(baseline, working, TaskField.EARLY_START);
-         boolean earlyFinishFail = !compareDates(baseline, working, TaskField.EARLY_FINISH);
 
-         System.out.println(working);
-         System.out.println("Early Start: " + baseline.getEarlyStart() + " " + working.getEarlyStart() + (earlyStartFail ? " FAIL" : ""));
-         System.out.println("Early Finish: " + baseline.getEarlyFinish() + " " + working.getEarlyFinish() + (earlyFinishFail ? " FAIL" : ""));
-         System.out.println();
+      if (m_forwardErrorCount != 0)
+      {
+         for (Task working : tasks)
+         {
+            Task baseline = m_baselineFile.getTaskByUniqueID(working.getUniqueID());
+            boolean earlyStartFail = !compareDates(baseline, working, TaskField.EARLY_START);
+            boolean earlyFinishFail = !compareDates(baseline, working, TaskField.EARLY_FINISH);
+
+            System.out.println(working);
+            System.out.println("Early Start: " + baseline.getEarlyStart() + " " + working.getEarlyStart() + (earlyStartFail ? " FAIL" : ""));
+            System.out.println("Early Finish: " + baseline.getEarlyFinish() + " " + working.getEarlyFinish() + (earlyFinishFail ? " FAIL" : ""));
+            System.out.println();
+         }
+      }
+
+      if (m_backwardErrorCount != 0)
+      {
+         Collections.reverse(tasks);
+
+         for (Task working : tasks)
+         {
+            Task baseline = m_baselineFile.getTaskByUniqueID(working.getUniqueID());
+            boolean lateStartFail = !compareDates(baseline, working, TaskField.LATE_START);
+            boolean lateFinishFail = !compareDates(baseline, working, TaskField.LATE_FINISH);
+
+            System.out.println(working);
+            System.out.println("Late Start: " + baseline.getLateStart() + " " + working.getLateStart() + (lateStartFail ? " FAIL" : ""));
+            System.out.println("Late Finish: " + baseline.getLateFinish() + " " + working.getLateFinish() + (lateFinishFail ? " FAIL" : ""));
+            System.out.println();
+         }
       }
    }
 
    private ProjectFile m_baselineFile;
    private ProjectFile m_workingFile;
-   private int m_errorCount;
+   private int m_forwardErrorCount;
+   private int m_backwardErrorCount;
    private final StringBuffer m_buffer = new StringBuffer();
 
    private static final Set<String> EXCLUDED_FILES = new HashSet<>();

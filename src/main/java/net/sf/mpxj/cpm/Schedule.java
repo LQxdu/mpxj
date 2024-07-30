@@ -1,6 +1,7 @@
 package net.sf.mpxj.cpm;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -11,6 +12,7 @@ import net.sf.mpxj.ProjectCalendar;
 import net.sf.mpxj.ProjectFile;
 import net.sf.mpxj.Relation;
 import net.sf.mpxj.Task;
+import net.sf.mpxj.common.LocalDateTimeHelper;
 
 public class Schedule
 {
@@ -26,12 +28,12 @@ public class Schedule
       // Forward pass
       for (Task task : tasks)
       {
-         List<Relation> predecessors = task.getPredecessors();
          ProjectCalendar calendar = task.getEffectiveCalendar();
          LocalDateTime earlyStart;
 
          if (task.getActualStart() == null)
          {
+            List<Relation> predecessors = task.getPredecessors();
             if (predecessors.isEmpty())
             {
                //earlyStart = projectStartDate;
@@ -100,15 +102,22 @@ public class Schedule
          List<Relation> successors = m_file.getRelations().getRawSuccessors(task);
          ProjectCalendar calendar = task.getEffectiveCalendar();
          LocalDateTime lateFinish;
-         if (successors.isEmpty())
+
+         if (task.getActualFinish() == null)
          {
-            lateFinish = projectFinishDate;
+            if (successors.isEmpty())
+            {
+               lateFinish = projectFinishDate;
+            }
+            else
+            {
+               lateFinish = successors.stream().map(r -> calculateLateFinish(calendar, projectFinishDate, r)).min(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing late start date"));
+            }
          }
          else
          {
-            lateFinish = successors.stream().map(r -> calculateLateFinish(calendar, projectFinishDate, r)).min(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing late start date"));
+            lateFinish = task.getActualFinish();
          }
-
          LocalDateTime lateStart = calendar.getDate(lateFinish, task.getDuration().negate());
 
          task.setLateFinish(calendar.getPreviousWorkFinish(lateFinish));
@@ -167,21 +176,16 @@ public class Schedule
       {
          case START_START:
          {
-//            if (successorTask.getEarlyStart().isBefore(successorTask.getLateStart()))
-//            {
-//               lateFinish = projectFinishDate;
-//            }
-//            else
-            {
-               LocalDateTime lateStart = calendar.getNextWorkStart(calendar.getDate(successorTask.getLateStart(), relation.getLag().negate()));
-               lateFinish = calendar.getDate(lateStart, predecessorTask.getDuration());
-            }
+//            LocalDateTime lateStart = calendar.getNextWorkStart(calendar.getDate(successorTask.getLateStart(), relation.getLag().negate()));
+//            lateFinish = calendar.getDate(lateStart, predecessorTask.getDuration());
+            lateFinish = projectFinishDate;
             break;
          }
 
          case FINISH_FINISH:
          {
-            lateFinish = calendar.getDate(projectFinishDate, relation.getLag().negate());
+            //lateFinish = calendar.getDate(projectFinishDate, relation.getLag().negate());
+            lateFinish = calendar.getDate(successorTask.getLateFinish(), relation.getLag().negate());
             break;
          }
 
