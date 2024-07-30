@@ -21,7 +21,7 @@ public class CpmTest
    {
       if(argv.length != 1)
       {
-         System.out.println("Usage: CpmTest <folder>");
+         System.out.println("Usage: CpmTest <folder or file>");
          return;
       }
 
@@ -201,5 +201,7 @@ public class CpmTest
    static
    {
       EXCLUDED_FILES.add("photographic-magic.mpp"); // External tasks used but not visible in MSP
+      EXCLUDED_FILES.add("oppressive-pitfall.mpp"); // Summary task logic
+
    }
 }
