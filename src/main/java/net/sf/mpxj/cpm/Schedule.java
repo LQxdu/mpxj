@@ -102,6 +102,12 @@ public class Schedule
                   break;
                }
 
+               case MUST_START_ON:
+               {
+                  earlyStart = task.getConstraintDate();
+                  break;
+               }
+
                case MUST_FINISH_ON:
                {
                   earlyStart = calendar.getDate(task.getConstraintDate(), task.getDuration().negate());
