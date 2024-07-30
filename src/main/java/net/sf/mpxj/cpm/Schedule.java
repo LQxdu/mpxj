@@ -146,6 +146,22 @@ public class Schedule
          {
             lateFinish = task.getActualFinish();
          }
+
+         switch (task.getConstraintType())
+         {
+            case MUST_START_ON:
+            {
+               lateFinish = calendar.getDate(task.getConstraintDate(), task.getDuration());
+               break;
+            }
+
+            case MUST_FINISH_ON:
+            {
+               lateFinish = task.getConstraintDate();
+               break;
+            }
+         }
+
          LocalDateTime lateStart = calendar.getDate(lateFinish, task.getDuration().negate());
 
          task.setLateFinish(calendar.getPreviousWorkFinish(lateFinish));
