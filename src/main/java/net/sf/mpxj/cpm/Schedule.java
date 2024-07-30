@@ -93,19 +93,19 @@ public class Schedule
                   break;
                }
 
+               case START_NO_LATER_THAN:
+               {
+                  if (earlyStart.isAfter(task.getConstraintDate()))
+                  {
+                     earlyStart = task.getConstraintDate();
+                  }
+                  break;
+               }
+
                case MUST_FINISH_ON:
                {
                   earlyStart = calendar.getDate(task.getConstraintDate(), task.getDuration().negate());
                   break;
-               }
-
-               case START_NO_LATER_THAN:
-               {
-                  //                  if (earlyStart.isAfter(task.getConstraintDate()))
-                  //                  {
-                  //                     earlyStart = task.getConstraintDate();
-                  //                  }
-                  //                  break;
                }
             }
          }
