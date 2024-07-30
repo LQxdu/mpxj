@@ -30,6 +30,12 @@ public class DepthFirstGraphSort
                continue;
             }
 
+            // Ignore inactive tasks
+            if (!task.getActive())
+            {
+               continue;
+            }
+
             visit(task);
          }
 

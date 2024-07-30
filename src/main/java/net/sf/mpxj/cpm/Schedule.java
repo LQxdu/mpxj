@@ -5,6 +5,7 @@ import java.time.LocalTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import net.sf.mpxj.ConstraintType;
 import net.sf.mpxj.Duration;
@@ -41,7 +42,7 @@ public class Schedule
             }
             else
             {
-               List<Relation> predecessors = task.getPredecessors();
+               List<Relation> predecessors = task.getPredecessors().stream().filter(r -> r.getTargetTask().getActive()).collect(Collectors.toList());
                if (predecessors.isEmpty())
                {
                   //earlyStart = projectStartDate;
@@ -114,7 +115,7 @@ public class Schedule
       Collections.reverse(tasks);
       for (Task task : tasks)
       {
-         List<Relation> successors = m_file.getRelations().getRawSuccessors(task);
+         List<Relation> successors = m_file.getRelations().getRawSuccessors(task).stream().filter(r -> r.getSourceTask().getActive()).collect(Collectors.toList());
          ProjectCalendar calendar = task.getEffectiveCalendar();
          LocalDateTime lateFinish;
 
