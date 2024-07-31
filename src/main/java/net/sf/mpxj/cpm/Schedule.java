@@ -184,7 +184,7 @@ public class Schedule
             lateFinish = previousWorkFinish;
          }
 
-         LocalDateTime lateStart = calendar.getDate(lateFinish, task.getDuration().negate());
+         LocalDateTime lateStart = task.getActualStart() == null ? calendar.getDate(lateFinish, task.getDuration().negate()) : task.getActualStart();
 
          task.setLateStart(lateStart);
          task.setLateFinish(lateFinish);

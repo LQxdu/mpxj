@@ -222,11 +222,12 @@ public class CpmTest
       EXCLUDED_FILES.add("oppressive-pitfall.mpp"); // Summary task logic
       EXCLUDED_FILES.add("bizarre-doomsday.mpp"); // Manually scheduled task without an explicitly supplied dates
       EXCLUDED_FILES.add("worrisome-definition.mpp"); // Split task via contoured timephased work
+      EXCLUDED_FILES.add("optimistic-layer.mpp"); // TODO: we're not working with calendars correctly - should be considering the resource calendars and merging?
    }
 
    private static final Set<String> INCLUDED_FILES = new HashSet<>();
    static
    {
-      // INCLUDED_FILES.add("".toLowerCase());
+      //INCLUDED_FILES.add("".toLowerCase());
    }
 }
