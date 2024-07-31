@@ -174,6 +174,11 @@ public class Schedule
                }
             }
 
+            if (task.getDeadline() != null && lateFinish.isAfter(task.getDeadline()))
+            {
+               lateFinish = task.getDeadline();
+            }
+
             // If we are at the start of the next period of work, we can move back to the end of the previous period of work
             LocalDateTime previousWorkFinish = calendar.getPreviousWorkFinish(lateFinish);
             if (!previousWorkFinish.isBefore(lateFinish) && calendar.getWork(previousWorkFinish, lateFinish, TimeUnit.HOURS).getDuration() == 0)
