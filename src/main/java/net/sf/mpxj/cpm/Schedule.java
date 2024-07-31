@@ -71,66 +71,66 @@ public class Schedule
                }
                earlyStart = calendar.getNextWorkStart(earlyStart);
             }
+
+            if (task.getConstraintType() != null)
+            {
+               switch (task.getConstraintType())
+               {
+                  case START_NO_EARLIER_THAN:
+                  {
+                     if (earlyStart.isBefore(task.getConstraintDate()))
+                     {
+                        earlyStart = task.getConstraintDate();
+                     }
+                     break;
+                  }
+
+                  case FINISH_NO_LATER_THAN:
+                  {
+                     LocalDateTime latestStart = calendar.getDate(task.getConstraintDate(), task.getDuration().negate());
+                     if (earlyStart.isAfter(latestStart))
+                     {
+                        earlyStart = latestStart;
+                     }
+                     break;
+                  }
+
+                  case FINISH_NO_EARLIER_THAN:
+                  {
+                     LocalDateTime earliestStart = calendar.getDate(task.getConstraintDate(), task.getDuration().negate());
+                     if (earlyStart.isBefore(earliestStart))
+                     {
+                        earlyStart = earliestStart;
+                     }
+                     break;
+                  }
+
+                  case START_NO_LATER_THAN:
+                  {
+                     if (earlyStart.isAfter(task.getConstraintDate()))
+                     {
+                        earlyStart = task.getConstraintDate();
+                     }
+                     break;
+                  }
+
+                  case MUST_START_ON:
+                  {
+                     earlyStart = task.getConstraintDate();
+                     break;
+                  }
+
+                  case MUST_FINISH_ON:
+                  {
+                     earlyStart = calendar.getDate(task.getConstraintDate(), task.getDuration().negate());
+                     break;
+                  }
+               }
+            }
          }
          else
          {
             earlyStart = task.getActualStart();
-         }
-
-         if (task.getConstraintType() != null)
-         {
-            switch (task.getConstraintType())
-            {
-               case START_NO_EARLIER_THAN:
-               {
-                  if (earlyStart.isBefore(task.getConstraintDate()))
-                  {
-                     earlyStart = task.getConstraintDate();
-                  }
-                  break;
-               }
-
-               case FINISH_NO_LATER_THAN:
-               {
-                  LocalDateTime latestStart = calendar.getDate(task.getConstraintDate(), task.getDuration().negate());
-                  if (earlyStart.isAfter(latestStart))
-                  {
-                     earlyStart = latestStart;
-                  }
-                  break;
-               }
-
-               case FINISH_NO_EARLIER_THAN:
-               {
-                  LocalDateTime earliestStart = calendar.getDate(task.getConstraintDate(), task.getDuration().negate());
-                  if (earlyStart.isBefore(earliestStart))
-                  {
-                     earlyStart = earliestStart;
-                  }
-                  break;
-               }
-
-               case START_NO_LATER_THAN:
-               {
-                  if (earlyStart.isAfter(task.getConstraintDate()))
-                  {
-                     earlyStart = task.getConstraintDate();
-                  }
-                  break;
-               }
-
-               case MUST_START_ON:
-               {
-                  earlyStart = task.getConstraintDate();
-                  break;
-               }
-
-               case MUST_FINISH_ON:
-               {
-                  earlyStart = calendar.getDate(task.getConstraintDate(), task.getDuration().negate());
-                  break;
-               }
-            }
          }
 
          LocalDateTime earlyFinish = task.getActualFinish() == null ? calendar.getDate(earlyStart, task.getDuration()) : task.getActualFinish();
