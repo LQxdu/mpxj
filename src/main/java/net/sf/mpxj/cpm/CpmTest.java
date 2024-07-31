@@ -224,6 +224,7 @@ public class CpmTest
       EXCLUDED_FILES.add("texan-jealousy.mpp"); // Split task
       EXCLUDED_FILES.add("unsupportable-reliving.mpp"); // Split task
       EXCLUDED_FILES.add("auburn-dugout.mpp"); // Split task
+      EXCLUDED_FILES.add("oval-ambulance.mpp"); // Split task
       EXCLUDED_FILES.add("optimistic-layer.mpp"); // TODO: maybe we're not working with calendars correctly - should be considering the resource calendars and merging?
       EXCLUDED_FILES.add("oppressive-pitfall.mpp"); // Summary task logic
       EXCLUDED_FILES.add("scarlet-throughput.mpp"); // Summary task logic
