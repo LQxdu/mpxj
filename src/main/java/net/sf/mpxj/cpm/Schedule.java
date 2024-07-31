@@ -39,7 +39,9 @@ public class Schedule
             if (task.getTaskMode() == TaskMode.MANUALLY_SCHEDULED)
             {
                // TODO: we need to be able to identify where NO start date has been supplied, which appears to trigger using ScheduledStart rather than Start
-               earlyStart = task.getStart();
+               task.setEarlyStart(task.getStart());
+               task.setEarlyFinish(task.getFinish());
+               continue;
             }
             else
             {
