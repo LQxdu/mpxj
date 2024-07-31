@@ -11,6 +11,7 @@ import net.sf.mpxj.ProjectFile;
 import net.sf.mpxj.Relation;
 import net.sf.mpxj.Task;
 import net.sf.mpxj.TaskMode;
+import net.sf.mpxj.TimeUnit;
 
 public class Schedule
 {
@@ -162,10 +163,17 @@ public class Schedule
             }
          }
 
+         // If we are at the start of the next period of work, we can move back to the end of the previous period of work
+         LocalDateTime previousWorkFinish = calendar.getPreviousWorkFinish(lateFinish);
+         if (!previousWorkFinish.isBefore(lateFinish) && calendar.getWork(previousWorkFinish, lateFinish, TimeUnit.HOURS).getDuration() == 0)
+         {
+            lateFinish = previousWorkFinish;
+         }
+
          LocalDateTime lateStart = calendar.getDate(lateFinish, task.getDuration().negate());
 
-         task.setLateFinish(calendar.getPreviousWorkFinish(lateFinish));
          task.setLateStart(lateStart);
+         task.setLateFinish(lateFinish);
       }
    }
 

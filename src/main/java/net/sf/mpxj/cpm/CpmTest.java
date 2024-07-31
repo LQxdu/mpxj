@@ -226,6 +226,6 @@ public class CpmTest
    private static final Set<String> INCLUDED_FILES = new HashSet<>();
    static
    {
-      //INCLUDED_FILES.add("");
+      INCLUDED_FILES.add("VarietyOfCases2010-1.mpp".toLowerCase());
    }
 }
