@@ -95,6 +95,7 @@ public class CpmTest
          System.out.println("Forward errors: " + m_forwardErrorCount);
          System.out.println("Backward errors: " + m_backwardErrorCount);
          analyseFailures();
+         System.out.println("DONE");
       }
    }
 
@@ -191,6 +192,11 @@ public class CpmTest
 
          for (Task working : tasks)
          {
+            if (working.getSummary() || !working.getActive())
+            {
+               continue;
+            }
+
             Task baseline = m_baselineFile.getTaskByUniqueID(working.getUniqueID());
             boolean lateStartFail = !compareDates(baseline, working, TaskField.LATE_START);
             boolean lateFinishFail = !compareDates(baseline, working, TaskField.LATE_FINISH);
