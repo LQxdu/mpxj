@@ -131,7 +131,7 @@ public class Schedule
             }
          }
 
-         LocalDateTime earlyFinish = calendar.getDate(earlyStart, task.getDuration());
+         LocalDateTime earlyFinish = task.getActualFinish() == null ? calendar.getDate(earlyStart, task.getDuration()) : task.getActualFinish();
          task.setEarlyStart(earlyStart);
          task.setEarlyFinish(earlyFinish);
       }
