@@ -23,6 +23,10 @@ public class Schedule
    public void process(LocalDateTime projectStartDate) throws Exception
    {
       List<Task> tasks = new DepthFirstGraphSort(m_file).sort();
+      if (tasks.isEmpty())
+      {
+         return;
+      }
 
       // Forward pass
       for (Task task : tasks)
@@ -90,6 +94,16 @@ public class Schedule
                   if (earlyStart.isAfter(latestStart))
                   {
                      earlyStart = latestStart;
+                  }
+                  break;
+               }
+
+               case FINISH_NO_EARLIER_THAN:
+               {
+                  LocalDateTime earliestStart = calendar.getDate(task.getConstraintDate(), task.getDuration().negate());
+                  if (earlyStart.isBefore(earliestStart))
+                  {
+                     earlyStart = earliestStart;
                   }
                   break;
                }
