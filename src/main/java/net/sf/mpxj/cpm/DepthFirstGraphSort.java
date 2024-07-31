@@ -36,6 +36,12 @@ public class DepthFirstGraphSort
                continue;
             }
 
+            // Ignore null tasks
+            if (task.getNull())
+            {
+               continue;
+            }
+
             visit(task);
          }
 

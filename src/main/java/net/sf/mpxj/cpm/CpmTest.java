@@ -102,7 +102,7 @@ public class CpmTest
    private void compare(Task baseline, Task working)
    {
       // Ignore summary and inactive tasks
-      if (baseline.getSummary() || !baseline.getActive())
+      if (baseline.getSummary() || !baseline.getActive() || baseline.getNull())
       {
          return;
       }
@@ -170,7 +170,7 @@ public class CpmTest
       {
          for (Task working : tasks)
          {
-            if (working.getSummary() || !working.getActive())
+            if (working.getSummary() || !working.getActive() || working.getNull())
             {
                continue;
             }
@@ -192,7 +192,7 @@ public class CpmTest
 
          for (Task working : tasks)
          {
-            if (working.getSummary() || !working.getActive())
+            if (working.getSummary() || !working.getActive() || working.getNull())
             {
                continue;
             }
@@ -220,12 +220,13 @@ public class CpmTest
    {
       EXCLUDED_FILES.add("photographic-magic.mpp"); // External tasks used but not visible in MSP
       EXCLUDED_FILES.add("oppressive-pitfall.mpp"); // Summary task logic
-      EXCLUDED_FILES.add("bizarre-doomsday.mpp"); // Manually scheduled task without a explicitly supplied dates
+      EXCLUDED_FILES.add("bizarre-doomsday.mpp"); // Manually scheduled task without an explicitly supplied dates
+      EXCLUDED_FILES.add("worrisome-definition.mpp"); // Split task via contoured timephased work
    }
 
    private static final Set<String> INCLUDED_FILES = new HashSet<>();
    static
    {
-      INCLUDED_FILES.add("VarietyOfCases2010-1.mpp".toLowerCase());
+      // INCLUDED_FILES.add("".toLowerCase());
    }
 }
