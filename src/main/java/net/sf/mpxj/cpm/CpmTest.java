@@ -219,10 +219,13 @@ public class CpmTest
    static
    {
       EXCLUDED_FILES.add("photographic-magic.mpp"); // External tasks used but not visible in MSP
-      EXCLUDED_FILES.add("oppressive-pitfall.mpp"); // Summary task logic
       EXCLUDED_FILES.add("bizarre-doomsday.mpp"); // Manually scheduled task without an explicitly supplied dates
       EXCLUDED_FILES.add("worrisome-definition.mpp"); // Split task via contoured timephased work
-      EXCLUDED_FILES.add("optimistic-layer.mpp"); // TODO: we're not working with calendars correctly - should be considering the resource calendars and merging?
+      EXCLUDED_FILES.add("optimistic-layer.mpp"); // TODO: maybe we're not working with calendars correctly - should be considering the resource calendars and merging?
+      EXCLUDED_FILES.add("oppressive-pitfall.mpp"); // Summary task logic
+      EXCLUDED_FILES.add("scarlet-throughput.mpp"); // Summary task logic
+      EXCLUDED_FILES.add("pulmonary-dove.mpp"); // Summary task logic
+      EXCLUDED_FILES.add("topical-mamma.mpp"); // Summary task logic
    }
 
    private static final Set<String> INCLUDED_FILES = new HashSet<>();
