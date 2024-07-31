@@ -158,32 +158,32 @@ public class Schedule
             {
                lateFinish = successors.stream().map(r -> calculateLateFinish(calendar, projectFinishDate, r)).min(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing late start date"));
             }
+
+            switch (task.getConstraintType())
+            {
+               case MUST_START_ON:
+               {
+                  lateFinish = calendar.getDate(task.getConstraintDate(), task.getDuration());
+                  break;
+               }
+
+               case MUST_FINISH_ON:
+               {
+                  lateFinish = task.getConstraintDate();
+                  break;
+               }
+            }
+
+            // If we are at the start of the next period of work, we can move back to the end of the previous period of work
+            LocalDateTime previousWorkFinish = calendar.getPreviousWorkFinish(lateFinish);
+            if (!previousWorkFinish.isBefore(lateFinish) && calendar.getWork(previousWorkFinish, lateFinish, TimeUnit.HOURS).getDuration() == 0)
+            {
+               lateFinish = previousWorkFinish;
+            }
          }
          else
          {
             lateFinish = task.getActualFinish();
-         }
-
-         switch (task.getConstraintType())
-         {
-            case MUST_START_ON:
-            {
-               lateFinish = calendar.getDate(task.getConstraintDate(), task.getDuration());
-               break;
-            }
-
-            case MUST_FINISH_ON:
-            {
-               lateFinish = task.getConstraintDate();
-               break;
-            }
-         }
-
-         // If we are at the start of the next period of work, we can move back to the end of the previous period of work
-         LocalDateTime previousWorkFinish = calendar.getPreviousWorkFinish(lateFinish);
-         if (!previousWorkFinish.isBefore(lateFinish) && calendar.getWork(previousWorkFinish, lateFinish, TimeUnit.HOURS).getDuration() == 0)
-         {
-            lateFinish = previousWorkFinish;
          }
 
          LocalDateTime lateStart = task.getActualStart() == null ? calendar.getDate(lateFinish, task.getDuration().negate()) : task.getActualStart();
