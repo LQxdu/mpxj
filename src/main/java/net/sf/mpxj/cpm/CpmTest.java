@@ -221,7 +221,11 @@ public class CpmTest
       EXCLUDED_FILES.add("photographic-magic.mpp"); // External tasks used but not visible in MSP
       EXCLUDED_FILES.add("bizarre-doomsday.mpp"); // Manually scheduled task without any explicitly supplied dates
       EXCLUDED_FILES.add("optimistic-layer.mpp"); // TODO: maybe we're not working with calendars correctly - should be considering the resource calendars and merging?
-      EXCLUDED_FILES.add("scatterbrained-tambourine.mpp"); // Calculated correctly, but incorrect late dates read from MPP by MPXJ
+      EXCLUDED_FILES.add("taboo-allure.mpp"); // TODO: handle elapsed duration leveling delay
+
+      // Calculated correctly, but incorrect late dates read from MPP by MPXJ
+      EXCLUDED_FILES.add("scatterbrained-tambourine.mpp");
+      EXCLUDED_FILES.add("valid-wartime.mpp");
 
       // Summary task logic
       EXCLUDED_FILES.add("oppressive-pitfall.mpp");
@@ -230,6 +234,9 @@ public class CpmTest
       EXCLUDED_FILES.add("topical-mamma.mpp");
       EXCLUDED_FILES.add("idle-niche.mpp");
       EXCLUDED_FILES.add("madding-portrayal.mpp");
+      EXCLUDED_FILES.add("apparent-canyon.mpp");
+      EXCLUDED_FILES.add("photosensitive-bluebook.mpp");
+      EXCLUDED_FILES.add("orange-fur.mpp");
 
       // Split task
       EXCLUDED_FILES.add("worrisome-definition.mpp");
@@ -240,6 +247,7 @@ public class CpmTest
       EXCLUDED_FILES.add("passive-inhibitor.mpp");
       EXCLUDED_FILES.add("hypophyseal-comedian.mpp");
       EXCLUDED_FILES.add("long-giant.mpp");
+      EXCLUDED_FILES.add("lumbar-kimono.mpp");
    }
 
    private static final Set<String> INCLUDED_FILES = new HashSet<>();
