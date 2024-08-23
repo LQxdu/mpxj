@@ -34,6 +34,7 @@ public class Schedule
          ProjectCalendar calendar = task.getEffectiveCalendar();
          LocalDateTime earlyStart;
 
+         LocalDateTime earlyFinish = null;
          if (task.getActualStart() == null)
          {
             if (task.getTaskMode() == TaskMode.MANUALLY_SCHEDULED)
@@ -60,7 +61,8 @@ public class Schedule
 
                      case FINISH_NO_EARLIER_THAN:
                      {
-                        earlyStart = calendar.getDate(task.getConstraintDate(), task.getDuration().negate());
+                        earlyFinish = task.getConstraintDate();
+                        earlyStart = calendar.getDate(earlyFinish, task.getDuration().negate());
                         break;
                      }
 
@@ -128,7 +130,8 @@ public class Schedule
 
                   case MUST_FINISH_ON:
                   {
-                     earlyStart = calendar.getDate(task.getConstraintDate(), task.getDuration().negate());
+                     earlyFinish = task.getConstraintDate();
+                     earlyStart = calendar.getDate(earlyFinish, task.getDuration().negate());
                      break;
                   }
                }
@@ -139,7 +142,11 @@ public class Schedule
             earlyStart = task.getActualStart();
          }
 
-         LocalDateTime earlyFinish = task.getActualFinish() == null ? calendar.getDate(earlyStart, task.getDuration()) : task.getActualFinish();
+         if (earlyFinish == null)
+         {
+            earlyFinish = task.getActualFinish() == null ? calendar.getDate(earlyStart, task.getDuration()) : task.getActualFinish();
+         }
+
          task.setEarlyStart(earlyStart);
          task.setEarlyFinish(earlyFinish);
       }
@@ -178,12 +185,31 @@ public class Schedule
                   lateFinish = task.getConstraintDate();
                   break;
                }
+
+               case START_NO_LATER_THAN:
+               {
+                  LocalDateTime latestFinish = calendar.getDate(task.getConstraintDate(), task.getDuration());
+                  if (lateFinish.isAfter(latestFinish))
+                  {
+                     lateFinish = latestFinish;
+                  }
+                  break;
+               }
+
+               case FINISH_NO_LATER_THAN:
+               {
+                  if (lateFinish.isAfter(task.getConstraintDate()))
+                  {
+                     lateFinish = task.getConstraintDate();
+                  }
+               }
             }
 
             if (task.getDeadline() != null && lateFinish.isAfter(task.getDeadline()))
             {
                lateFinish = task.getDeadline();
             }
+
 
             // If we are at the start of the next period of work, we can move back to the end of the previous period of work
             LocalDateTime previousWorkFinish = calendar.getPreviousWorkFinish(lateFinish);
