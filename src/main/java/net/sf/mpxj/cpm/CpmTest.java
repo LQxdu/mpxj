@@ -230,6 +230,8 @@ public class CpmTest
       EXCLUDED_FILES.add("scarlet-throughput.mpp"); // Summary task logic
       EXCLUDED_FILES.add("pulmonary-dove.mpp"); // Summary task logic
       EXCLUDED_FILES.add("topical-mamma.mpp"); // Summary task logic
+      EXCLUDED_FILES.add("passive-inhibitor.mpp"); // Split task
+      EXCLUDED_FILES.add("scatterbrained-tambourine.mpp"); // Calculated correctly, but incorrect late dates reda from MPP by MPXJ
    }
 
    private static final Set<String> INCLUDED_FILES = new HashSet<>();

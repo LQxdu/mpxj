@@ -58,6 +58,12 @@ public class Schedule
                         break;
                      }
 
+                     case FINISH_NO_EARLIER_THAN:
+                     {
+                        earlyStart = calendar.getDate(task.getConstraintDate(), task.getDuration().negate());
+                        break;
+                     }
+
                      default:
                      {
                         earlyStart = projectStartDate;
