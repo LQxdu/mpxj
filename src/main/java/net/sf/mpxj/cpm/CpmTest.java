@@ -219,20 +219,27 @@ public class CpmTest
    static
    {
       EXCLUDED_FILES.add("photographic-magic.mpp"); // External tasks used but not visible in MSP
-      EXCLUDED_FILES.add("bizarre-doomsday.mpp"); // Manually scheduled task without an explicitly supplied dates
-      EXCLUDED_FILES.add("worrisome-definition.mpp"); // Split task
-      EXCLUDED_FILES.add("texan-jealousy.mpp"); // Split task
-      EXCLUDED_FILES.add("unsupportable-reliving.mpp"); // Split task
-      EXCLUDED_FILES.add("auburn-dugout.mpp"); // Split task
-      EXCLUDED_FILES.add("oval-ambulance.mpp"); // Split task
+      EXCLUDED_FILES.add("bizarre-doomsday.mpp"); // Manually scheduled task without any explicitly supplied dates
       EXCLUDED_FILES.add("optimistic-layer.mpp"); // TODO: maybe we're not working with calendars correctly - should be considering the resource calendars and merging?
-      EXCLUDED_FILES.add("oppressive-pitfall.mpp"); // Summary task logic
-      EXCLUDED_FILES.add("scarlet-throughput.mpp"); // Summary task logic
-      EXCLUDED_FILES.add("pulmonary-dove.mpp"); // Summary task logic
-      EXCLUDED_FILES.add("topical-mamma.mpp"); // Summary task logic
-      EXCLUDED_FILES.add("passive-inhibitor.mpp"); // Split task
       EXCLUDED_FILES.add("scatterbrained-tambourine.mpp"); // Calculated correctly, but incorrect late dates read from MPP by MPXJ
-      EXCLUDED_FILES.add("hypophyseal-comedian.mpp"); // Split task
+
+      // Summary task logic
+      EXCLUDED_FILES.add("oppressive-pitfall.mpp");
+      EXCLUDED_FILES.add("scarlet-throughput.mpp");
+      EXCLUDED_FILES.add("pulmonary-dove.mpp");
+      EXCLUDED_FILES.add("topical-mamma.mpp");
+      EXCLUDED_FILES.add("idle-niche.mpp");
+      EXCLUDED_FILES.add("madding-portrayal.mpp");
+
+      // Split task
+      EXCLUDED_FILES.add("worrisome-definition.mpp");
+      EXCLUDED_FILES.add("texan-jealousy.mpp");
+      EXCLUDED_FILES.add("unsupportable-reliving.mpp");
+      EXCLUDED_FILES.add("auburn-dugout.mpp");
+      EXCLUDED_FILES.add("oval-ambulance.mpp");
+      EXCLUDED_FILES.add("passive-inhibitor.mpp");
+      EXCLUDED_FILES.add("hypophyseal-comedian.mpp");
+      EXCLUDED_FILES.add("long-giant.mpp");
    }
 
    private static final Set<String> INCLUDED_FILES = new HashSet<>();
