@@ -695,6 +695,7 @@ final class AstaReader
       //NATURAL_ORDER
       //SPARI_INTEGER
       task.setName(name);
+      task.setActivityID(row.getString("_UNIQUE_TASK_ID"));
       //EXPANDED_TASK
       //PRIORITY
       //UNSCHEDULABLE
@@ -1878,14 +1879,18 @@ final class AstaReader
             continue;
          }
 
-         Integer id = row.getInteger("UDF_ID");
-         String externalName = row.getString("UDF_NAME");
-         UserDefinedField field = new UserDefinedField(m_project, id, null, externalName, fieldTypeClass, false, dataType);
-         userDefinedFields.add(field);
-         customFields.add(field).setAlias(externalName);
+         UserDefinedField field = new UserDefinedField.Builder(m_project)
+            .uniqueID(row.getInteger("UDF_ID"))
+            .externalName(row.getString("UDF_NAME"))
+            .fieldTypeClass(fieldTypeClass)
+            .dataType(dataType)
+            .build();
 
-         objectTypeMap.put(id, objectType);
-         fieldMap.put(id, field);
+         userDefinedFields.add(field);
+         customFields.add(field).setAlias(field.getName());
+
+         objectTypeMap.put(field.getUniqueID(), objectType);
+         fieldMap.put(field.getUniqueID(), field);
       }
    }
 
@@ -2222,7 +2227,7 @@ final class AstaReader
             .description(description)
             .parent(valueMap.get(row.getInteger("CODE_LIBRARY_ENTRY")))
             .build();
-         code.getValues().add(value);
+         code.addValue(value);
          valueMap.put(value.getUniqueID(), value);
       }
 

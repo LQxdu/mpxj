@@ -1,6 +1,24 @@
 # Changelog
 
-## 13.1.1 (unreleased)
+## 13.3.1 (unreleased)
+
+## 13.3.0 (2024-08-22)
+* When reading multiple Primavera schedules from the same source, MPXJ now ensures that instances of activity code definitions, user defined field definitions, locations, units of measure, expense categories, cost accounts, work contours, and notes topics are shared across projects. This will allow you to, for example, filter tasks from multiple projects using a `Location` instance. Previously each project had its own independent instances for each of these types, which could not be used across multiple projects.
+* When reading Powerproject schedules, ensure that the Activity ID attribute for WBS entries is populated using Powerproject's Unique Task ID attribute.
+* Add support for reading timephased planned work from MPP files for manually scheduled tasks (Contributed by Fabian Schmidt).
+
+## 13.2.2 (2024-08-14)
+* Add missing constructors to `TimephasedCost` and `TimephasedWork` in MPXJ.Net.
+
+## 13.2.1 (2024-08-13)
+* Make the MPXJ.Net assembly strong named.
+
+## 13.2.0 (2024-08-12)
+* Implemented the `UserDefinedField.Builder` class.
+* Marked the `UserDefinedField` constructor as deprecated. Use the builder class instead.
+* Marked the `UserDefinedField.setDataType()` method as deprecated. Use the builder class instead.
+* Updated to address an issue when writing XER files where a project does not have an explicit Unique ID value, and there are project UDF values.
+* Added the convenience method `ActivityCode.addValue` to make it easier to add a value to an activity code.
 
 ## 13.1.0 (2024-07-26)
 * Updated to POI 5.3.0

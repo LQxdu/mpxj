@@ -33,7 +33,7 @@
 
         <div id="breadcrumbs">
           <ul class="breadcrumb">
-        <li id="publishDate">Last Published: 2024-07-27</li>
+        <li id="publishDate">Last Published: 2024-08-22</li>
           </ul>
         </div>
       </header>
@@ -68,8 +68,72 @@
 <h2><a name="MPXJ_Changes"></a>MPXJ Changes</h2><section>
 
 <p>Get the RSS feed of the last changes:&#160;<a href="changes.rss"><img src="images/rss.png" alt="rss feed" title="rss feed" /></a></p></section><section>
-<h3 id="a13.1.1">Release 13.1.1 &#x2013; unreleased</h3>
+<h3 id="a13.3.1">Release 13.3.1 &#x2013; unreleased</h3>
 <p>No changes in this release.</p></section><section>
+<h3 id="a13.3.0">Release 13.3.0 &#x2013; 2024-08-22</h3>
+<table border="0" class="table table-striped">
+<tr class="b">
+<th>Type</th>
+<th>Changes</th>
+<th>By</th></tr>
+<tr class="a">
+<td><img src="images/update.gif" alt="Update" title="Update" /></td>
+<td>When reading multiple Primavera schedules from the same source, MPXJ now ensures that instances of activity code definitions, user defined field definitions, locations, units of measure, expense categories, cost accounts, work contours, and notes topics are shared across projects. This will allow you to, for example, filter tasks from multiple projects using a `Location` instance. Previously each project had its own independent instances for each of these types, which could not be used across multiple projects.</td>
+<td><a href="team-list.html#joniles">joniles</a></td></tr>
+<tr class="b">
+<td><img src="images/update.gif" alt="Update" title="Update" /></td>
+<td>When reading Powerproject schedules, ensure that the Activity ID attribute for WBS entries is populated using Powerproject's Unique Task ID attribute.</td>
+<td><a href="team-list.html#joniles">joniles</a></td></tr>
+<tr class="a">
+<td><img src="images/update.gif" alt="Update" title="Update" /></td>
+<td>Add support for reading timephased planned work from MPP files for manually scheduled tasks (Contributed by Fabian Schmidt).</td>
+<td><a href="team-list.html#joniles">joniles</a></td></tr></table></section><section>
+<h3 id="a13.2.2">Release 13.2.2 &#x2013; 2024-08-14</h3>
+<table border="0" class="table table-striped">
+<tr class="b">
+<th>Type</th>
+<th>Changes</th>
+<th>By</th></tr>
+<tr class="a">
+<td><img src="images/update.gif" alt="Update" title="Update" /></td>
+<td>Add missing constructors to `TimephasedCost` and `TimephasedWork` in MPXJ.Net.</td>
+<td><a href="team-list.html#joniles">joniles</a></td></tr></table></section><section>
+<h3 id="a13.2.1">Release 13.2.1 &#x2013; 2024-08-13</h3>
+<table border="0" class="table table-striped">
+<tr class="b">
+<th>Type</th>
+<th>Changes</th>
+<th>By</th></tr>
+<tr class="a">
+<td><img src="images/update.gif" alt="Update" title="Update" /></td>
+<td>Make the MPXJ.Net assembly strong named.</td>
+<td><a href="team-list.html#joniles">joniles</a></td></tr></table></section><section>
+<h3 id="a13.2.0">Release 13.2.0 &#x2013; 2024-08-12</h3>
+<table border="0" class="table table-striped">
+<tr class="b">
+<th>Type</th>
+<th>Changes</th>
+<th>By</th></tr>
+<tr class="a">
+<td><img src="images/update.gif" alt="Update" title="Update" /></td>
+<td>Implemented the `UserDefinedField.Builder` class.</td>
+<td><a href="team-list.html#joniles">joniles</a></td></tr>
+<tr class="b">
+<td><img src="images/update.gif" alt="Update" title="Update" /></td>
+<td>Marked the `UserDefinedField` constructor as deprecated. Use the builder class instead.</td>
+<td><a href="team-list.html#joniles">joniles</a></td></tr>
+<tr class="a">
+<td><img src="images/update.gif" alt="Update" title="Update" /></td>
+<td>Marked the `UserDefinedField.setDataType()` method as deprecated. Use the builder class instead.</td>
+<td><a href="team-list.html#joniles">joniles</a></td></tr>
+<tr class="b">
+<td><img src="images/update.gif" alt="Update" title="Update" /></td>
+<td>Updated to address an issue when writing XER files where a project does not have an explicit Unique ID value, and there are project UDF values.</td>
+<td><a href="team-list.html#joniles">joniles</a></td></tr>
+<tr class="a">
+<td><img src="images/update.gif" alt="Update" title="Update" /></td>
+<td>Added the convenience method `ActivityCode.addValue` to make it easier to add a value to an activity code.</td>
+<td><a href="team-list.html#joniles">joniles</a></td></tr></table></section><section>
 <h3 id="a13.1.0">Release 13.1.0 &#x2013; 2024-07-26</h3>
 <table border="0" class="table table-striped">
 <tr class="b">

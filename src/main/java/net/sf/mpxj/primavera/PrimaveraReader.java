@@ -53,6 +53,7 @@ import net.sf.mpxj.CurrencySymbolPosition;
 import net.sf.mpxj.DataType;
 import java.time.DayOfWeek;
 
+import net.sf.mpxj.ProjectFileSharedData;
 import net.sf.mpxj.SchedulingProgressedActivities;
 import net.sf.mpxj.UnitOfMeasure;
 import net.sf.mpxj.UnitOfMeasureContainer;
@@ -111,6 +112,7 @@ final class PrimaveraReader
    /**
     * Constructor.
     *
+    * @param shared shared data container
     * @param resourceFields resource field mapping
     * @param wbsFields wbs field mapping
     * @param taskFields task field mapping
@@ -120,9 +122,9 @@ final class PrimaveraReader
     * @param wbsIsFullPath determine the WBS attribute structure
     * @param ignoreErrors ignore errors flag
     */
-   public PrimaveraReader(Map<FieldType, String> resourceFields, Map<FieldType, String> roleFields, Map<FieldType, String> wbsFields, Map<FieldType, String> taskFields, Map<FieldType, String> assignmentFields, boolean matchPrimaveraWBS, boolean wbsIsFullPath, boolean ignoreErrors)
+   public PrimaveraReader(ProjectFileSharedData shared, Map<FieldType, String> resourceFields, Map<FieldType, String> roleFields, Map<FieldType, String> wbsFields, Map<FieldType, String> taskFields, Map<FieldType, String> assignmentFields, boolean matchPrimaveraWBS, boolean wbsIsFullPath, boolean ignoreErrors)
    {
-      m_project = new ProjectFile();
+      m_project = new ProjectFile(shared);
       m_eventManager = m_project.getEventManager();
 
       ProjectConfig config = m_project.getProjectConfig();
@@ -203,8 +205,25 @@ final class PrimaveraReader
          properties.setActivityIdIncrementBasedOnSelectedActivity(row.getBoolean("task_code_prefix_flag"));
          properties.setProjectWebsiteUrl(row.getString("proj_url"));
 
-         // cannot assign actual calendar yet as it has not been read yet
-         m_defaultCalendarID = row.getInteger("clndr_id");
+         ProjectCalendar calendar = m_project.getCalendarByUniqueID(row.getInteger("clndr_id"));
+         if (calendar != null)
+         {
+            m_project.getProjectProperties().setDefaultCalendar(calendar);
+         }
+      }
+
+      //
+      // We've used Primavera's unique ID values for the calendars we've read so far.
+      // At this point any new calendars we create must be auto numbered. We also need to
+      // ensure that the auto numbering starts from an appropriate value.
+      //
+      ProjectConfig config = m_project.getProjectConfig();
+      config.setAutoCalendarUniqueID(true);
+
+      // Ensure we have a default calendar
+      if (m_project.getDefaultCalendar() == null)
+      {
+         m_project.setDefaultCalendar(m_project.getCalendars().findOrCreateDefaultCalendar());
       }
    }
 
@@ -294,13 +313,12 @@ final class PrimaveraReader
    }
 
    /**
-    * Read activity code types and values.
+    * Read activity code definitions.
     *
     * @param types activity code type data
     * @param typeValues activity code value data
-    * @param assignments activity code task assignments
     */
-   public void processActivityCodes(List<Row> types, List<Row> typeValues, List<Row> assignments)
+   public void processActivityCodeDefinitions(List<Row> types, List<Row> typeValues)
    {
       ActivityCodeContainer container = m_project.getActivityCodes();
       Map<Integer, ActivityCode> map = new HashMap<>();
@@ -334,38 +352,41 @@ final class PrimaveraReader
                .name(row.getString("short_name"))
                .description(row.getString("actv_code_name"))
                .color(ColorHelper.parseHexColor(row.getString("color")))
-               .parent(m_activityCodeMap.get(row.getInteger("parent_actv_code_id")))
+               .parent(code.getValueByUniqueID(row.getInteger("parent_actv_code_id")))
                .build();
-            code.getValues().add(value);
-            m_activityCodeMap.put(value.getUniqueID(), value);
+            code.addValue(value);
          }
-      }
-
-      for (Row row : assignments)
-      {
-         Integer taskID = row.getInteger("task_id");
-         List<Integer> list = m_activityCodeAssignments.computeIfAbsent(taskID, k -> new ArrayList<>());
-         list.add(row.getInteger("actv_code_id"));
       }
    }
 
    /**
-    * Process User Defined Fields (UDF).
+    * Process activity code assignments.
+    *
+    * @param assignments activity code assignments
+    */
+   public void processActivityCodeAssignments(List<Row> assignments)
+   {
+      for (Row row : assignments)
+      {
+         Integer taskID = row.getInteger("task_id");
+         List<Row> list = m_activityCodeAssignments.computeIfAbsent(taskID, k -> new ArrayList<>());
+         list.add(row);
+      }
+   }
+
+   /**
+    * Process User Defined Field (UDF) definitions.
     *
     * @param fields field definitions
-    * @param values field values
     */
-   public void processUserDefinedFields(List<Row> fields, List<Row> values)
+   public void processUdfDefinitions(List<Row> fields)
    {
-      // Process fields
-      Map<Integer, String> tableNameMap = new HashMap<>();
       UserDefinedFieldContainer container = m_project.getUserDefinedFields();
 
       for (Row row : fields)
       {
          Integer fieldId = row.getInteger("udf_type_id");
          String tableName = row.getString("table_name");
-         tableNameMap.put(fieldId, tableName);
 
          FieldTypeClass fieldTypeClass = FieldTypeClassHelper.getInstanceFromXer(tableName);
          if (fieldTypeClass == null)
@@ -373,22 +394,37 @@ final class PrimaveraReader
             continue;
          }
 
-         boolean summaryTaskOnly = tableName.equals("PROJWBS");
-         String internalName = row.getString("udf_type_name");
-         String externalName = row.getString("udf_type_label");
-         DataType dataType = UdfHelper.getDataTypeFromXer(row.getString("logical_data_type"));
-         UserDefinedField fieldType = new UserDefinedField(m_project, fieldId, internalName, externalName, fieldTypeClass, summaryTaskOnly, dataType);
+         UserDefinedField fieldType = new UserDefinedField.Builder(m_project)
+            .uniqueID(fieldId)
+            .internalName(row.getString("udf_type_name"))
+            .externalName(row.getString("udf_type_label"))
+            .fieldTypeClass(fieldTypeClass)
+            .summaryTaskOnly(tableName.equals("PROJWBS"))
+            .dataType(UdfHelper.getDataTypeFromXer(row.getString("logical_data_type")))
+            .build();
+
          container.add(fieldType);
-
-         m_udfFields.put(fieldId, fieldType);
-         m_project.getCustomFields().add(fieldType).setAlias(externalName).setUniqueID(fieldId);
+         m_project.getCustomFields().add(fieldType).setAlias(fieldType.getName()).setUniqueID(fieldId);
       }
+   }
 
-      // Process values
+   /**
+    * Process User Defined Field (UDF) values.
+    *
+    * @param values field values
+    */
+   public void processUdfValues(List<Row> values)
+   {
       for (Row row : values)
       {
-         Integer typeID = row.getInteger("udf_type_id");
-         String tableName = tableNameMap.get(typeID);
+         FieldType fieldType = m_project.getUserDefinedFields().getByUniqueID(row.getInteger("udf_type_id"));
+         if (fieldType == null)
+         {
+            // UDF values for entities we don't currently support
+            continue;
+         }
+
+         String tableName = FieldTypeClassHelper.getXerFromInstance(fieldType);
          Map<Integer, List<Row>> tableData = m_udfValues.computeIfAbsent(tableName, k -> new HashMap<>());
 
          Integer id = row.getInteger("fk_id");
@@ -429,21 +465,6 @@ final class PrimaveraReader
             entry.getKey().setParent(baseCalendar);
          }
       }
-
-      //
-      // We've used Primavera's unique ID values for the calendars we've read so far.
-      // At this point any new calendars we create must be auto number. We also need to
-      // ensure that the auto numbering starts from an appropriate value.
-      //
-      ProjectConfig config = m_project.getProjectConfig();
-      config.setAutoCalendarUniqueID(true);
-
-      ProjectCalendar defaultCalendar = m_project.getCalendarByUniqueID(m_defaultCalendarID);
-      if (defaultCalendar == null)
-      {
-         defaultCalendar = m_project.getCalendars().findOrCreateDefaultCalendar();
-      }
-      m_project.setDefaultCalendar(defaultCalendar);
    }
 
    /**
@@ -462,10 +483,10 @@ final class PrimaveraReader
       calendar.setType(CalendarTypeHelper.getInstanceFromXer(row.getString("clndr_type")));
       calendar.setPersonal(row.getBoolean("rsrc_private"));
 
-      if (row.getBoolean("default_flag") && m_defaultCalendarID == null)
+      // We may override this later with project properties
+      if (row.getBoolean("default_flag") && m_project.getProjectProperties().getDefaultCalendarUniqueID() == null)
       {
-         // We don't have a default calendar set for the project, use the global default
-         m_defaultCalendarID = id;
+         m_project.getProjectProperties().setDefaultCalendar(calendar);
       }
 
       // Process data
@@ -1202,16 +1223,24 @@ final class PrimaveraReader
     */
    private void populateActivityCodes(Task task, Integer uniqueID)
    {
-      List<Integer> list = m_activityCodeAssignments.get(uniqueID);
-      if (list != null)
+      List<Row> list = m_activityCodeAssignments.get(uniqueID);
+      if (list == null)
       {
-         for (Integer id : list)
+         return;
+      }
+
+      for (Row row : list)
+      {
+         ActivityCode activityCode = m_project.getActivityCodes().getByUniqueID(row.getInteger("actv_code_type_id"));
+         if (activityCode == null)
          {
-            ActivityCodeValue value = m_activityCodeMap.get(id);
-            if (value != null)
-            {
-               task.addActivityCode(value);
-            }
+            continue;
+         }
+
+         ActivityCodeValue value = activityCode.getValueByUniqueID(row.getInteger("actv_code_id"));
+         if (value != null)
+         {
+            task.addActivityCode(value);
          }
       }
    }
@@ -1226,43 +1255,44 @@ final class PrimaveraReader
    private void addUDFValue(FieldTypeClass fieldType, FieldContainer container, Row row)
    {
       Integer fieldId = row.getInteger("udf_type_id");
-      FieldType field = m_udfFields.get(fieldId);
+      FieldType field = m_project.getUserDefinedFields().getByUniqueID(fieldId);
+      if (field == null)
+      {
+         return;
+      }
 
       Object value;
-      if (field != null)
+      DataType fieldDataType = field.getDataType();
+
+      switch (fieldDataType)
       {
-         DataType fieldDataType = field.getDataType();
-
-         switch (fieldDataType)
+         case DATE:
          {
-            case DATE:
-            {
-               value = row.getDate("udf_date");
-               break;
-            }
-
-            case CURRENCY:
-            case NUMERIC:
-            {
-               value = row.getDouble("udf_number");
-               break;
-            }
-
-            case INTEGER:
-            {
-               value = row.getInteger("udf_number");
-               break;
-            }
-
-            default:
-            {
-               value = row.getString("udf_text");
-               break;
-            }
+            value = row.getDate("udf_date");
+            break;
          }
 
-         container.set(field, value);
+         case CURRENCY:
+         case NUMERIC:
+         {
+            value = row.getDouble("udf_number");
+            break;
+         }
+
+         case INTEGER:
+         {
+            value = row.getInteger("udf_number");
+            break;
+         }
+
+         default:
+         {
+            value = row.getString("udf_text");
+            break;
+         }
       }
+
+      container.set(field, value);
    }
 
    /**
@@ -2353,7 +2383,6 @@ final class PrimaveraReader
    private final ClashMap m_roleClashMap = new ClashMap();
    private final DateTimeFormatter m_twentyFourHourTimeFormat = DateTimeFormatter.ofPattern("H:mm");
    private final DateTimeFormatter m_twelveHourTimeFormat = new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("h:mm a").toFormatter();
-   private Integer m_defaultCalendarID;
    private final Map<FieldType, String> m_resourceFields;
    private final Map<FieldType, String> m_roleFields;
    private final Map<FieldType, String> m_wbsFields;
@@ -2364,11 +2393,8 @@ final class PrimaveraReader
    private final boolean m_wbsIsFullPath;
    private final boolean m_ignoreErrors;
 
-   private final Map<Integer, FieldType> m_udfFields = new HashMap<>();
    private final Map<String, Map<Integer, List<Row>>> m_udfValues = new HashMap<>();
-
-   private final Map<Integer, ActivityCodeValue> m_activityCodeMap = new HashMap<>();
-   private final Map<Integer, List<Integer>> m_activityCodeAssignments = new HashMap<>();
+   private final Map<Integer, List<Row>> m_activityCodeAssignments = new HashMap<>();
 
    private final ObjectSequence m_relationObjectID;
 

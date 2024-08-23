@@ -47,7 +47,7 @@ import jakarta.xml.bind.JAXBException;
 import javax.xml.parsers.ParserConfigurationException;
 
 import net.sf.mpxj.BaselineStrategy;
-import net.sf.mpxj.DataType;
+import net.sf.mpxj.ProjectFileSharedData;
 import net.sf.mpxj.TimephasedWorkContainer;
 import net.sf.mpxj.UnitOfMeasure;
 import net.sf.mpxj.UnitOfMeasureContainer;
@@ -419,10 +419,14 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
       {
          m_activityClashMap = new ClashMap();
          m_roleClashMap = new ClashMap();
-         m_activityCodeMap = new HashMap<>();
-         m_fieldTypeMap = new HashMap<>();
 
-         m_projectFile = new ProjectFile();
+         boolean readSharedData = m_shared == null;
+         if (m_shared == null)
+         {
+            m_shared = new ProjectFileSharedData();
+         }
+
+         m_projectFile = new ProjectFile(m_shared);
          m_eventManager = m_projectFile.getEventManager();
 
          ProjectConfig config = m_projectFile.getProjectConfig();
@@ -439,9 +443,28 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
 
          addListenersToProject(m_projectFile);
 
+         // Process common data
+         if (readSharedData)
+         {
+            processLocations(apibo);
+            processUnitsOfMeasure(apibo);
+            processExpenseCategories(apibo);
+            processCostAccounts(apibo);
+            processWorkContours(apibo);
+            processNotebookTopics(apibo);
+            processUdfDefintions(apibo);
+            processActivityCodeDefinitions(apibo.getActivityCodeType(), apibo.getActivityCode());
+         }
+
+         processCalendars(apibo.getCalendar());
+         processResources(apibo);
+         processRoles(apibo);
+         processResourceRates(apibo);
+         processRoleRates(apibo);
+
+         // Process project specific data
          List<ActivityCodeTypeType> activityCodeTypes;
          List<ActivityCodeType> activityCodes;
-         List<CalendarType> calendars;
          List<WBSType> wbs;
          List<ProjectNoteType> projectNotes;
          List<ActivityType> activities;
@@ -451,16 +474,13 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
          List<ActivityExpenseType> activityExpenseType;
          List<ActivityStepType> steps;
 
-         processUdfDefintions(apibo);
-         processLocations(apibo);
-
          if (projectObject instanceof ProjectType)
          {
             ProjectType project = (ProjectType) projectObject;
+            processCalendars(project.getCalendar());
             processProjectProperties(project);
             activityCodeTypes = project.getActivityCodeType();
             activityCodes = project.getActivityCode();
-            calendars = project.getCalendar();
             wbs = project.getWBS();
             projectNotes = project.getProjectNote();
             activities = project.getActivity();
@@ -473,10 +493,10 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
          else
          {
             BaselineProjectType project = (BaselineProjectType) projectObject;
+            processCalendars(project.getCalendar());
             processProjectProperties(project);
             activityCodeTypes = project.getActivityCodeType();
             activityCodes = project.getActivityCode();
-            calendars = project.getCalendar();
             wbs = project.getWBS();
             projectNotes = project.getProjectNote();
             activities = project.getActivity();
@@ -487,25 +507,16 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
             activityExpenseType = project.getActivityExpense();
          }
 
-         processNotebookTopics(apibo);
          Map<Integer, Notes> wbsNotes = getWbsNotes(projectNotes);
          m_projectFile.getProjectProperties().setNotesObject(wbsNotes.get(Integer.valueOf(0)));
 
          processGlobalProperties(apibo);
-         processUnitsOfMeasure(apibo);
-         processExpenseCategories(apibo);
-         processCostAccounts(apibo);
-         processActivityCodes(apibo, activityCodeTypes, activityCodes);
-         processCalendars(apibo, calendars);
-         processResources(apibo);
-         processRoles(apibo);
+         processActivityCodeDefinitions(activityCodeTypes, activityCodes);
+         configureProjectCalendars();
          processTasks(wbs, wbsNotes, activities, getActivityNotes(activityNotes));
          processPredecessors(relationships);
-         processWorkContours(apibo);
          processAssignments(assignments);
          processExpenseItems(activityExpenseType);
-         processResourceRates(apibo);
-         processRoleRates(apibo);
          processActivitySteps(steps);
          rollupValues();
 
@@ -518,11 +529,9 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
       finally
       {
          m_projectFile = null;
+         m_shared = null;
          m_activityClashMap = null;
          m_roleClashMap = null;
-         m_activityCodeMap = null;
-         m_fieldTypeMap = null;
-         m_defaultCalendarObjectID = null;
       }
    }
 
@@ -588,11 +597,14 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
          return;
       }
 
-      boolean summaryTaskOnly = udf.getSubjectArea().equals("WBS");
-      String externalName = udf.getTitle();
-      DataType dataType = UdfHelper.getDataTypeFromXml(udf.getDataType());
-      UserDefinedField field = new UserDefinedField(m_projectFile, udf.getObjectId(), null, externalName, fieldTypeClass, summaryTaskOnly, dataType);
-      m_fieldTypeMap.put(udf.getObjectId(), field);
+      UserDefinedField field = new UserDefinedField.Builder(m_projectFile)
+         .uniqueID(udf.getObjectId())
+         .externalName(udf.getTitle())
+         .fieldTypeClass(fieldTypeClass)
+         .summaryTaskOnly(udf.getSubjectArea().equals("WBS"))
+         .dataType(UdfHelper.getDataTypeFromXml(udf.getDataType()))
+         .build();
+
       m_projectFile.getUserDefinedFields().add(field);
       m_projectFile.getCustomFields().add(field).setAlias(udf.getTitle()).setUniqueID(udf.getObjectId());
    }
@@ -658,7 +670,11 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
       properties.setActivityIdIncrementBasedOnSelectedActivity(BooleanHelper.getBoolean(project.isActivityIdBasedOnSelectedActivity()));
       properties.setProjectWebsiteUrl(nullIfEmpty(project.getWebSiteURL()));
 
-      m_defaultCalendarObjectID = project.getActivityDefaultCalendarObjectId();
+      ProjectCalendar calendar = m_projectFile.getCalendarByUniqueID(project.getActivityDefaultCalendarObjectId());
+      if (calendar != null)
+      {
+         m_projectFile.setDefaultCalendar(calendar);
+      }
 
       processScheduleOptions(project.getScheduleOptions());
       populateUserDefinedFieldValues(properties, project.getUDF());
@@ -686,26 +702,25 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
       properties.setProjectIsBaseline(true);
       properties.setProjectWebsiteUrl(project.getWebSiteURL());
 
-      m_defaultCalendarObjectID = project.getActivityDefaultCalendarObjectId();
+      ProjectCalendar calendar = m_projectFile.getCalendarByUniqueID(project.getActivityDefaultCalendarObjectId());
+      if (calendar != null)
+      {
+         m_projectFile.setDefaultCalendar(calendar);
+      }
 
       processScheduleOptions(project.getScheduleOptions());
    }
 
    /**
-    * Process activity code data.
+    * Process activity code definitions.
     *
-    * @param apibo global activity code data
-    * @param activityCodeTypes project-specific activity code types
-    * @param activityCodes project-specific activity codes
+    * @param types list of activity code types
+    * @param typeValues list of activity code values
     */
-   private void processActivityCodes(APIBusinessObjects apibo, List<ActivityCodeTypeType> activityCodeTypes, List<ActivityCodeType> activityCodes)
+   private void processActivityCodeDefinitions(List<ActivityCodeTypeType> types, List<ActivityCodeType> typeValues)
    {
       ActivityCodeContainer container = m_projectFile.getActivityCodes();
       Map<Integer, ActivityCode> map = new HashMap<>();
-
-      List<ActivityCodeTypeType> types = new ArrayList<>();
-      types.addAll(apibo.getActivityCodeType());
-      types.addAll(activityCodeTypes);
 
       for (ActivityCodeTypeType type : types)
       {
@@ -723,10 +738,6 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
          map.put(code.getUniqueID(), code);
       }
 
-      List<ActivityCodeType> typeValues = new ArrayList<>();
-      typeValues.addAll(apibo.getActivityCode());
-      typeValues.addAll(activityCodes);
-
       typeValues = HierarchyHelper.sortHierarchy(typeValues, v -> v.getObjectId(), v -> v.getParentObjectId());
       for (ActivityCodeType typeValue : typeValues)
       {
@@ -740,10 +751,9 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
                .name(typeValue.getCodeValue())
                .description(typeValue.getDescription())
                .color(ColorHelper.parseHtmlColor(typeValue.getColor()))
-               .parent(m_activityCodeMap.get(typeValue.getParentObjectId()))
+               .parent(code.getValueByUniqueID(typeValue.getParentObjectId()))
                .build();
-            code.getValues().add(value);
-            m_activityCodeMap.put(value.getUniqueID(), value);
+            code.addValue(value);
          }
       }
    }
@@ -880,14 +890,10 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
    /**
     * Process project calendars.
     *
-    * @param apibo file data
-    * @param projectCalendars project-specific calendars
+    * @param calendars list of calendar data
     */
-   private void processCalendars(APIBusinessObjects apibo, List<CalendarType> projectCalendars)
+   private void processCalendars(List<CalendarType> calendars)
    {
-      List<CalendarType> calendars = new ArrayList<>(apibo.getCalendar());
-      calendars.addAll(projectCalendars);
-
       //
       // First pass: read calendar definitions
       //
@@ -913,19 +919,13 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
             entry.getKey().setParent(baseCalendar);
          }
       }
+   }
 
-      //
-      // Set the default calendar if we've read ID from the project properties
-      //
-      if (m_defaultCalendarObjectID != null)
-      {
-         ProjectCalendar defaultCalendar = m_projectFile.getCalendarByUniqueID(m_defaultCalendarObjectID);
-         if (defaultCalendar != null)
-         {
-            m_projectFile.setDefaultCalendar(defaultCalendar);
-         }
-      }
-
+   /**
+    * Set the default calendar ID and enable auto calendar unique ID values.
+    */
+   private void configureProjectCalendars()
+   {
       // Ensure that resource calendars we create later have valid unique IDs
       ProjectConfig config = m_projectFile.getProjectConfig();
       config.setAutoCalendarUniqueID(true);
@@ -947,10 +947,9 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
       calendar.setType(CalendarTypeHelper.getInstanceFromXml(row.getType()));
       calendar.setPersonal(BooleanHelper.getBoolean(row.isIsPersonal()));
 
-      if (BooleanHelper.getBoolean(row.isIsDefault()) && m_defaultCalendarObjectID == null)
+      if (BooleanHelper.getBoolean(row.isIsDefault()) && m_projectFile.getDefaultCalendar() == null)
       {
-         // We don't have a default calendar set for the project, use the global default
-         m_defaultCalendarObjectID = id;
+         m_projectFile.setDefaultCalendar(calendar);
       }
 
       Map<DayOfWeek, StandardWorkHours> hoursMap = new HashMap<>();
@@ -2299,7 +2298,7 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
    {
       for (UDFAssignmentType udf : udfs)
       {
-         FieldType fieldType = m_fieldTypeMap.get(Integer.valueOf(udf.getTypeObjectId()));
+         UserDefinedField fieldType = m_projectFile.getUserDefinedFields().getByUniqueID(Integer.valueOf(udf.getTypeObjectId()));
          if (fieldType != null)
          {
             mpxj.set(fieldType, getUdfValue(udf));
@@ -2362,10 +2361,16 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
    {
       for (CodeAssignmentType assignment : codes)
       {
-         ActivityCodeValue code = m_activityCodeMap.get(Integer.valueOf(assignment.getValueObjectId()));
-         if (code != null)
+         ActivityCode activityCode = m_projectFile.getActivityCodes().getByUniqueID(Integer.valueOf(assignment.getTypeObjectId()));
+         if (activityCode == null)
          {
-            task.addActivityCode(code);
+            continue;
+         }
+
+         ActivityCodeValue activityCodeValue = activityCode.getValueByUniqueID(Integer.valueOf(assignment.getValueObjectId()));
+         if (activityCodeValue != null)
+         {
+            task.addActivityCode(activityCodeValue);
          }
       }
    }
@@ -2554,14 +2559,12 @@ public final class PrimaveraPMFileReader extends AbstractProjectStreamReader
 
    private Integer m_projectID;
    private ProjectFile m_projectFile;
+   private ProjectFileSharedData m_shared;
    private EventManager m_eventManager;
    private ClashMap m_activityClashMap;
    private ClashMap m_roleClashMap;
-   private Map<Integer, ActivityCodeValue> m_activityCodeMap;
-   private Map<Integer, FieldType> m_fieldTypeMap;
    private List<ExternalRelation> m_externalRelations;
    private boolean m_linkCrossProjectRelations;
-   private Integer m_defaultCalendarObjectID;
    private BaselineStrategy m_baselineStrategy = PrimaveraBaselineStrategy.PLANNED_ATTRIBUTES;
 
    private static final Map<String, DayOfWeek> DAY_MAP = new HashMap<>();

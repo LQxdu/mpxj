@@ -5,7 +5,25 @@
 		<author email="jon@timephased.com">Jon Iles</author>
 	</properties>
 	<body>
-		<release date="unreleased" version="13.1.1">
+		<release date="unreleased" version="13.3.1">
+		</release>
+		<release date="2024-08-22" version="13.3.0">
+			<action dev="joniles" type="update">When reading multiple Primavera schedules from the same source, MPXJ now ensures that instances of activity code definitions, user defined field definitions, locations, units of measure, expense categories, cost accounts, work contours, and notes topics are shared across projects. This will allow you to, for example, filter tasks from multiple projects using a `Location` instance. Previously each project had its own independent instances for each of these types, which could not be used across multiple projects.</action>
+			<action dev="joniles" type="update">When reading Powerproject schedules, ensure that the Activity ID attribute for WBS entries is populated using Powerproject's Unique Task ID attribute.</action>
+			<action dev="joniles" type="update">Add support for reading timephased planned work from MPP files for manually scheduled tasks (Contributed by Fabian Schmidt).</action>
+		</release>
+		<release date="2024-08-14" version="13.2.2">
+			<action dev="joniles" type="update">Add missing constructors to `TimephasedCost` and `TimephasedWork` in MPXJ.Net.</action>
+		</release>
+		<release date="2024-08-13" version="13.2.1">
+			<action dev="joniles" type="update">Make the MPXJ.Net assembly strong named.</action>
+		</release>
+		<release date="2024-08-12" version="13.2.0">
+			<action dev="joniles" type="update">Implemented the `UserDefinedField.Builder` class.</action>
+			<action dev="joniles" type="update">Marked the `UserDefinedField` constructor as deprecated. Use the builder class instead.</action>
+			<action dev="joniles" type="update">Marked the `UserDefinedField.setDataType()` method as deprecated. Use the builder class instead.</action>
+			<action dev="joniles" type="update">Updated to address an issue when writing XER files where a project does not have an explicit Unique ID value, and there are project UDF values.</action>
+			<action dev="joniles" type="update">Added the convenience method `ActivityCode.addValue` to make it easier to add a value to an activity code.</action>
 		</release>
 		<release date="2024-07-26" version="13.1.0">
 			<action dev="joniles" type="update">Updated to POI 5.3.0</action>

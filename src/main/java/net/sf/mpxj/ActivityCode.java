@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  * Activity code type definition, contains a list of the valid
  * values for this activity code.
  */
-public final class ActivityCode
+public final class ActivityCode implements ProjectEntityWithUniqueID
 {
    /**
     * Constructor.
@@ -40,7 +40,7 @@ public final class ActivityCode
     */
    private ActivityCode(Builder builder)
    {
-      m_uniqueID = builder.m_file.getUniqueIdObjectSequence(ActivityCode.class).syncOrGetNext(builder.m_uniqueID);
+      m_uniqueID = builder.m_sequenceProvider.getUniqueIdObjectSequence(ActivityCode.class).syncOrGetNext(builder.m_uniqueID);
       m_scope = builder.m_scope;
       m_scopeEpsUniqueID = builder.m_scopeEpsUniqueID;
       m_scopeProjectUniqueID = builder.m_scopeProjectUniqueID;
@@ -55,7 +55,7 @@ public final class ActivityCode
     *
     * @return unique ID
     */
-   public Integer getUniqueID()
+   @Override public Integer getUniqueID()
    {
       return m_uniqueID;
    }
@@ -153,6 +153,33 @@ public final class ActivityCode
       return m_values.stream().filter(v -> v.getParent() == null).collect(Collectors.toList());
    }
 
+   /**
+    * Add a value to this activity code.
+    *
+    * @param value activity code value
+    */
+   public void addValue(ActivityCodeValue value)
+   {
+      m_values.add(value);
+   }
+
+   /**
+    * Retrieve a value belonging to this activity code using its unique ID.
+    *
+    * @param id actuvity code value unique ID
+    * @return ActivityCodeValue instance or null
+    */
+   public ActivityCodeValue getValueByUniqueID(Integer id)
+   {
+      if (id == null)
+      {
+         return null;
+      }
+
+      // I'd prefer a map-based lookup, but this will do for now and the list of values will typically be fairly short
+      return m_values.stream().filter(v -> v.getUniqueID().intValue() == id.intValue()).findFirst().orElse(null);
+   }
+
    private final Integer m_uniqueID;
    private final ActivityCodeScope m_scope;
    private final Integer m_scopeEpsUniqueID;
@@ -171,11 +198,11 @@ public final class ActivityCode
       /**
        * Constructor.
        *
-       * @param file parent file
+       * @param sequenceProvider parent file
        */
-      public Builder(ProjectFile file)
+      public Builder(UniqueIdObjectSequenceProvider sequenceProvider)
       {
-         m_file = file;
+         m_sequenceProvider = sequenceProvider;
       }
 
       /**
@@ -303,7 +330,7 @@ public final class ActivityCode
          return new ActivityCode(this);
       }
 
-      private final ProjectFile m_file;
+      private final UniqueIdObjectSequenceProvider m_sequenceProvider;
       private Integer m_uniqueID;
       private ActivityCodeScope m_scope = ActivityCodeScope.GLOBAL;
       private Integer m_scopeEpsUniqueID;
