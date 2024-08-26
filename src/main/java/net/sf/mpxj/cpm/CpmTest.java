@@ -238,6 +238,7 @@ public class CpmTest
       EXCLUDED_FILES.add("apparent-canyon.mpp");
       EXCLUDED_FILES.add("photosensitive-bluebook.mpp");
       EXCLUDED_FILES.add("orange-fur.mpp");
+      EXCLUDED_FILES.add("false-rustler.mpp");
 
       // Split task
       EXCLUDED_FILES.add("worrisome-definition.mpp");
@@ -249,6 +250,8 @@ public class CpmTest
       EXCLUDED_FILES.add("hypophyseal-comedian.mpp");
       EXCLUDED_FILES.add("long-giant.mpp");
       EXCLUDED_FILES.add("lumbar-kimono.mpp");
+      EXCLUDED_FILES.add("seasonal-standing.mpp");
+      EXCLUDED_FILES.add("undisputed-empire.mpp");
    }
 
    private static final Set<String> INCLUDED_FILES = new HashSet<>();
