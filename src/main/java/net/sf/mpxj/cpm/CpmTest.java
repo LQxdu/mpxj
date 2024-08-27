@@ -221,8 +221,11 @@ public class CpmTest
       EXCLUDED_FILES.add("photographic-magic.mpp"); // External tasks used but not visible in MSP
       EXCLUDED_FILES.add("bizarre-doomsday.mpp"); // Manually scheduled task without any explicitly supplied dates
       EXCLUDED_FILES.add("optimistic-layer.mpp"); // TODO: maybe we're not working with calendars correctly - should be considering the resource calendars and merging?
-      EXCLUDED_FILES.add("taboo-allure.mpp"); // TODO: handle elapsed duration leveling delay
+      EXCLUDED_FILES.add("adequate-function.mpp"); // TODO: assignment leveling delay
       EXCLUDED_FILES.add("serene-birthright.mpp"); // TODO: oddity handling one late finish constraint versus end of working time
+
+      // Scheduled from end
+      EXCLUDED_FILES.add("dietetic-phrasing.mpp");
 
       // Calculated correctly, but incorrect late dates read from MPP by MPXJ
       EXCLUDED_FILES.add("scatterbrained-tambourine.mpp");

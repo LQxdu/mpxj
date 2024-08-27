@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import net.sf.mpxj.Duration;
 import net.sf.mpxj.ProjectCalendar;
 import net.sf.mpxj.ProjectFile;
 import net.sf.mpxj.Relation;
@@ -49,8 +50,6 @@ public class Schedule
                List<Relation> predecessors = task.getPredecessors().stream().filter(r -> r.getTargetTask().getActive()).collect(Collectors.toList());
                if (predecessors.isEmpty())
                {
-                  //earlyStart = projectStartDate;
-
                   switch (task.getConstraintType())
                   {
                      case START_NO_EARLIER_THAN:
@@ -144,7 +143,7 @@ public class Schedule
 
          if (earlyFinish == null)
          {
-            earlyFinish = task.getActualFinish() == null ? calendar.getDate(earlyStart, task.getDuration()) : task.getActualFinish();
+            earlyFinish = task.getActualFinish() == null ? calendar.getDate(addLevelingDelay(calendar, earlyStart, task.getLevelingDelay()), task.getDuration()) : task.getActualFinish();
          }
 
          task.setEarlyStart(earlyStart);
@@ -321,6 +320,63 @@ public class Schedule
 //      }
 
       return lateFinish;
+   }
+
+   private LocalDateTime addLevelingDelay(ProjectCalendar calendar, LocalDateTime date, Duration delay)
+   {
+      if (delay == null || delay.getDuration() == 0)
+      {
+         return date;
+      }
+
+      // Original duration
+      double duration = delay.getDuration();
+
+      // Convert to minutes
+      switch (delay.getUnits())
+      {
+         case HOURS:
+         case ELAPSED_HOURS:
+         {
+            duration = duration * 60.0;
+            break;
+         }
+
+         case DAYS:
+         case ELAPSED_DAYS:
+         {
+            duration = duration * 1440.0;
+            break;
+         }
+
+         case WEEKS:
+         case ELAPSED_WEEKS:
+         {
+            duration = duration * 1440.0 * 7.0;
+            break;
+         }
+
+         case MONTHS:
+         case ELAPSED_MONTHS:
+         {
+            duration = duration * 1440.0 * 30;
+            break;
+         }
+
+         case YEARS:
+         case ELAPSED_YEARS:
+         {
+            duration = duration * 1440.0 * 365.0;
+            break;
+         }
+
+         default:
+         {
+            throw new UnsupportedOperationException("Unsupported TimeUnit " + delay.getUnits());
+         }
+      }
+
+      return date.plusMinutes((long)duration);
    }
 
    private final ProjectFile m_file;
