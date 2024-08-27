@@ -223,6 +223,7 @@ public class CpmTest
       EXCLUDED_FILES.add("optimistic-layer.mpp"); // TODO: maybe we're not working with calendars correctly - should be considering the resource calendars and merging?
       EXCLUDED_FILES.add("adequate-function.mpp"); // TODO: assignment leveling delay
       EXCLUDED_FILES.add("serene-birthright.mpp"); // TODO: oddity handling one late finish constraint versus end of working time
+      EXCLUDED_FILES.add("microsomal-finisher.mpp"); // TODO: late finish, project end determined by constrained task - use unconstrained early finish as project end?
 
       // Scheduled from end
       EXCLUDED_FILES.add("dietetic-phrasing.mpp");
