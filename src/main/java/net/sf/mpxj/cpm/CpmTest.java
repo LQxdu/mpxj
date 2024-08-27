@@ -13,6 +13,7 @@ import net.sf.mpxj.ProjectFile;
 import net.sf.mpxj.Relation;
 import net.sf.mpxj.Task;
 import net.sf.mpxj.TaskField;
+import net.sf.mpxj.common.LocalDateTimeHelper;
 import net.sf.mpxj.reader.UniversalProjectReader;
 
 public class CpmTest
@@ -130,7 +131,9 @@ public class CpmTest
 
       //m_buffer.append(baseline + " " + field + " baseline=" + baselineDate + " working=" + workingDate);
 
-      if (!baselineDate.isEqual(workingDate))
+
+      if (LocalDateTimeHelper.compare(baselineDate, workingDate) != 0)
+      //if (!baselineDate.isEqual(workingDate))
       {
          ProjectCalendar calendar = baseline.getEffectiveCalendar();
          if (calendar.getNextWorkStart(workingDate).isEqual(baselineDate) || calendar.getNextWorkStart(baselineDate).isEqual(workingDate))
@@ -230,9 +233,13 @@ public class CpmTest
       // Scheduled from end
       EXCLUDED_FILES.add("dietetic-phrasing.mpp");
 
+      // Manually contoured task
+      EXCLUDED_FILES.add("undeveloped-slice.mpp");
+
       // Calculated correctly, but incorrect late dates read from MPP by MPXJ
       EXCLUDED_FILES.add("scatterbrained-tambourine.mpp");
       EXCLUDED_FILES.add("valid-wartime.mpp");
+      EXCLUDED_FILES.add("harpy-gully.mpp");
 
       // Summary task logic
       EXCLUDED_FILES.add("oppressive-pitfall.mpp");
@@ -249,6 +256,7 @@ public class CpmTest
       EXCLUDED_FILES.add("emaciated-subjectivist.mpp");
       EXCLUDED_FILES.add("blissful-schism.mpp");
       EXCLUDED_FILES.add("dread-hydrochemistry.mpp");
+      EXCLUDED_FILES.add("thicker-recital.mpp");
 
       // Split task
       EXCLUDED_FILES.add("worrisome-definition.mpp");
@@ -263,6 +271,7 @@ public class CpmTest
       EXCLUDED_FILES.add("seasonal-standing.mpp");
       EXCLUDED_FILES.add("undisputed-empire.mpp");
       EXCLUDED_FILES.add("uninvited-friend.mpp");
+      EXCLUDED_FILES.add("quickest-photoluminescence.mpp");
    }
 
    private static final Set<String> INCLUDED_FILES = new HashSet<>();
