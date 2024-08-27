@@ -160,63 +160,71 @@ public class Schedule
          ProjectCalendar calendar = task.getEffectiveCalendar();
          LocalDateTime lateFinish;
 
+
          if (task.getActualFinish() == null)
          {
-            if (successors.isEmpty())
+            // Special case: if we have a milestone with only an actual start set, actual start (and hence late finish) must have the same date
+            if (task.getMilestone() && task.getActualStart() != null)
             {
-               lateFinish = projectFinishDate;
+               lateFinish = task.getActualStart();
             }
             else
             {
-               lateFinish = successors.stream().map(r -> calculateLateFinish(calendar, projectFinishDate, r)).min(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing late start date"));
-            }
-
-            switch (task.getConstraintType())
-            {
-               case MUST_START_ON:
+               if (successors.isEmpty())
                {
-                  lateFinish = calendar.getDate(task.getConstraintDate(), task.getDuration());
-                  break;
+                  lateFinish = projectFinishDate;
+               }
+               else
+               {
+                  lateFinish = successors.stream().map(r -> calculateLateFinish(calendar, projectFinishDate, r)).min(Comparator.naturalOrder()).orElseThrow(() -> new CpmException("Missing late start date"));
                }
 
-               case MUST_FINISH_ON:
+               switch (task.getConstraintType())
                {
-                  lateFinish = task.getConstraintDate();
-                  break;
-               }
-
-               case START_NO_LATER_THAN:
-               {
-                  LocalDateTime latestFinish = calendar.getDate(task.getConstraintDate(), task.getDuration());
-                  if (lateFinish.isAfter(latestFinish))
+                  case MUST_START_ON:
                   {
-                     lateFinish = latestFinish;
+                     lateFinish = calendar.getDate(task.getConstraintDate(), task.getDuration());
+                     break;
                   }
-                  break;
-               }
 
-               case FINISH_NO_LATER_THAN:
-               {
-                  if (lateFinish.isAfter(task.getConstraintDate()))
+                  case MUST_FINISH_ON:
                   {
                      lateFinish = task.getConstraintDate();
+                     break;
+                  }
+
+                  case START_NO_LATER_THAN:
+                  {
+                     LocalDateTime latestFinish = calendar.getDate(task.getConstraintDate(), task.getDuration());
+                     if (lateFinish.isAfter(latestFinish))
+                     {
+                        lateFinish = latestFinish;
+                     }
+                     break;
+                  }
+
+                  case FINISH_NO_LATER_THAN:
+                  {
+                     if (lateFinish.isAfter(task.getConstraintDate()))
+                     {
+                        lateFinish = task.getConstraintDate();
+                     }
                   }
                }
-            }
 
-            if (task.getDeadline() != null && lateFinish.isAfter(task.getDeadline()))
-            {
-               lateFinish = task.getDeadline();
-            }
+               if (task.getDeadline() != null && lateFinish.isAfter(task.getDeadline()))
+               {
+                  lateFinish = task.getDeadline();
+               }
 
+               // If we are at the start of the next period of work, we can move back to the end of the previous period of work
+               LocalDateTime previousWorkFinish = calendar.getPreviousWorkFinish(lateFinish);
 
-            // If we are at the start of the next period of work, we can move back to the end of the previous period of work
-            LocalDateTime previousWorkFinish = calendar.getPreviousWorkFinish(lateFinish);
-
-            // TODO: this condition is not correct
-            if (!previousWorkFinish.isBefore(lateFinish) && calendar.getWork(previousWorkFinish, lateFinish, TimeUnit.HOURS).getDuration() == 0)
-            {
-               lateFinish = previousWorkFinish;
+               // TODO: this condition is not correct
+               if (!previousWorkFinish.isBefore(lateFinish) && calendar.getWork(previousWorkFinish, lateFinish, TimeUnit.HOURS).getDuration() == 0)
+               {
+                  lateFinish = previousWorkFinish;
+               }
             }
          }
          else

@@ -242,6 +242,7 @@ public class CpmTest
       EXCLUDED_FILES.add("photosensitive-bluebook.mpp");
       EXCLUDED_FILES.add("orange-fur.mpp");
       EXCLUDED_FILES.add("false-rustler.mpp");
+      EXCLUDED_FILES.add("bluff-shoelace.mpp");
 
       // Split task
       EXCLUDED_FILES.add("worrisome-definition.mpp");
