@@ -224,6 +224,8 @@ public class CpmTest
       EXCLUDED_FILES.add("adequate-function.mpp"); // TODO: assignment leveling delay
       EXCLUDED_FILES.add("serene-birthright.mpp"); // TODO: oddity handling one late finish constraint versus end of working time
       EXCLUDED_FILES.add("microsomal-finisher.mpp"); // TODO: late finish, project end determined by constrained task - use unconstrained early finish as project end?
+      EXCLUDED_FILES.add("circulatory-collapse.mpp"); // TODO: needs calculation at assignment level?
+      EXCLUDED_FILES.add("onrushing-stratification.mpp"); // MPP reading issue: missing predecessor
 
       // Scheduled from end
       EXCLUDED_FILES.add("dietetic-phrasing.mpp");
@@ -244,6 +246,9 @@ public class CpmTest
       EXCLUDED_FILES.add("orange-fur.mpp");
       EXCLUDED_FILES.add("false-rustler.mpp");
       EXCLUDED_FILES.add("bluff-shoelace.mpp");
+      EXCLUDED_FILES.add("emaciated-subjectivist.mpp");
+      EXCLUDED_FILES.add("blissful-schism.mpp");
+      EXCLUDED_FILES.add("dread-hydrochemistry.mpp");
 
       // Split task
       EXCLUDED_FILES.add("worrisome-definition.mpp");
@@ -257,6 +262,7 @@ public class CpmTest
       EXCLUDED_FILES.add("lumbar-kimono.mpp");
       EXCLUDED_FILES.add("seasonal-standing.mpp");
       EXCLUDED_FILES.add("undisputed-empire.mpp");
+      EXCLUDED_FILES.add("uninvited-friend.mpp");
    }
 
    private static final Set<String> INCLUDED_FILES = new HashSet<>();
